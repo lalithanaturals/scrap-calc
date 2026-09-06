@@ -154,6 +154,15 @@
                 </div>
             </div>
 
+            <!-- Grand Total Display Card -->
+            <div class="bg-gradient-to-r from-red-600 to-rose-700 p-4 rounded-2xl shadow-md text-white flex items-center justify-between">
+                <div>
+                    <span class="text-xs uppercase font-bold tracking-wider text-red-200 block">Combined Total Payout</span>
+                    <span class="text-xs text-red-100">Aluminum + Steel</span>
+                </div>
+                <div id="grand-total-display" class="text-2xl sm:text-3xl font-extrabold tracking-tight">₹0.00</div>
+            </div>
+
             <div class="flex flex-col sm:flex-row gap-3 pt-2">
                 <button type="button" id="btn-refresh" disabled onclick="resetForm()" class="bg-gray-100 text-gray-400 font-bold py-3.5 px-4 rounded-xl border border-gray-300 cursor-not-allowed flex items-center justify-center space-x-1.5 sm:w-28">
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -191,9 +200,12 @@
 
     <!-- SUBMISSION CONFIRMATION MODAL -->
     <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 hidden no-print">
-        <div class="bg-white rounded-3xl max-w-md w-full p-4 sm:p-6 shadow-2xl space-y-4 text-center">
+        <div class="bg-white rounded-3xl max-w-md w-full p-4 sm:p-6 shadow-2xl space-y-4 text-center relative">
             
-            <div id="modal-step-review" class="space-y-4">
+            <!-- Close Button Top Right -->
+            <button type="button" onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl px-2 py-1 z-10">✕</button>
+
+            <div id="modal-step-review" class="space-y-4 pt-2">
                 <h3 class="text-base sm:text-lg font-bold text-gray-900 border-b pb-2">Confirm Transaction Submission</h3>
                 
                 <div class="space-y-2 text-xs sm:text-sm text-gray-700 bg-red-50/50 p-3 rounded-xl border border-red-100 text-left">
@@ -226,7 +238,7 @@
                 </div>
             </div>
 
-            <div id="modal-step-print" class="hidden space-y-4">
+            <div id="modal-step-print" class="hidden space-y-4 pt-2">
                 <div id="modal-status-icon" class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                 </div>
@@ -811,9 +823,11 @@
         function calculate() {
             const al = computeMaterial('al');
             const st = computeMaterial('st');
+            const grandTotal = al.cost + st.cost;
 
             document.getElementById('al-total-display').innerText = `₹${al.cost.toFixed(2)}`;
             document.getElementById('st-total-display').innerText = `₹${st.cost.toFixed(2)}`;
+            document.getElementById('grand-total-display').innerText = `₹${grandTotal.toFixed(2)}`;
             document.getElementById('print-date').innerText = "Date: " + new Date().toLocaleString();
 
             const alSection = document.getElementById('print-al-section');
@@ -861,7 +875,6 @@
                 stSection.className = "thermal-border-bottom";
             }
 
-            const grandTotal = al.cost + st.cost;
             document.getElementById('print-grand-total').innerText = `₹${grandTotal.toFixed(2)}`;
 
             document.getElementById('popup-id-label').innerText = isEstimationMode ? "Estimation ID:" : "Exchange ID:";
