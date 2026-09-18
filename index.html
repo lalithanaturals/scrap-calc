@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Scrap Calculator</title>
+    <!-- Device-width detection: the app defaults to a fixed iPhone-16-Pro-sized card.
+         Only on Android does it switch to the old full-width "stretch" layout, since
+         Android's huge range of screen sizes/aspect ratios makes a fixed width unusable
+         there. This runs before body paint so there's no layout flash. -->
+    <script>
+        if (/Android/i.test(navigator.userAgent)) {
+            document.documentElement.classList.add('stretch-mode');
+        }
+    </script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Barcode Library -->
@@ -11,6 +20,18 @@
     <style>
         .no-print { display: block; }
         .print-only { display: none; }
+
+        /* Default: fixed iPhone 16 Pro width (402px logical/CSS px), centered on screen.
+           No "stretch to fill viewport" behavior unless .stretch-mode is set on <html>
+           (Android only, see the detection script in <head>). */
+        .app-shell {
+            width: 402px;
+            max-width: 402px;
+        }
+        html.stretch-mode .app-shell {
+            width: 100%;
+            max-width: 36rem; /* matches the old Tailwind max-w-xl */
+        }
 
         .receipt-container {
             position: relative;
@@ -87,7 +108,7 @@
     </div>
 
     <!-- ================= APP INTERFACE (NO-PRINT) ================= -->
-    <div class="max-w-xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden no-print border border-red-100">
+    <div id="app-shell" class="app-shell mx-auto bg-white rounded-xl shadow-lg overflow-hidden no-print border border-red-100">
         <div class="bg-red-600 p-3.5 sm:p-5 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
             <div>
                 <span class="text-[11px] font-semibold uppercase tracking-wider text-red-200 block mb-0.5">Lalitha Naturals</span>
