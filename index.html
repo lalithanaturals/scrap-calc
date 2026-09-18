@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Exchange Calculator & Google Sheets Sync</title>
+    <title>Scrap Calculator</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Barcode Library -->
@@ -56,15 +56,15 @@
 
             body.print-mode-a4 @page { size: A4 portrait; margin: 10mm; }
             body.print-mode-thermal @page { size: 80mm auto; margin: 0mm !important; }
-            
+
             body.print-mode-thermal .receipt-container {
-                width: 76mm !important; 
-                max-width: 76mm !important; 
-                padding: 2mm !important; 
-                border: none !important; 
-                margin: 0 auto !important; 
-                color: #000 !important; 
-                font-size: 11px !important; 
+                width: 76mm !important;
+                max-width: 76mm !important;
+                padding: 2mm !important;
+                border: none !important;
+                margin: 0 auto !important;
+                color: #000 !important;
+                font-size: 11px !important;
                 line-height: 1.2 !important;
             }
             body.print-mode-thermal .watermark-img { display: none !important; }
@@ -91,13 +91,21 @@
         <div class="bg-red-600 p-3.5 sm:p-5 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
             <div>
                 <span class="text-[11px] font-semibold uppercase tracking-wider text-red-200 block mb-0.5">Lalitha Naturals</span>
-                <h1 class="text-lg sm:text-xl font-bold tracking-wide">Exchange Calculator</h1>
+                <h1 class="text-lg sm:text-xl font-bold tracking-wide">Scrap Calculator</h1>
             </div>
-            <div class="flex items-center space-x-2.5 w-full sm:w-auto justify-between sm:justify-end">
-                <button type="button" id="btn-search-modal" onclick="openSearchModal()" disabled class="bg-red-700 opacity-50 cursor-not-allowed text-white font-bold px-2.5 py-1.5 rounded-lg text-xs flex items-center space-x-1 shadow relative z-20">
-                    <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <span class="pointer-events-none">Search Record</span>
-                </button>
+            <div class="flex items-center space-x-1.5 sm:space-x-2 w-full sm:w-auto justify-between sm:justify-end">
+                <div class="flex items-center space-x-1.5">
+                    <button type="button" id="btn-settings" onclick="openSettingsModal()" title="Price Settings" class="bg-red-700 hover:bg-red-800 text-white p-2 rounded-lg shadow relative z-20">
+                        <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
+                    <button type="button" id="btn-share" onclick="shareApp()" title="Share App" class="bg-red-700 hover:bg-red-800 text-white p-2 rounded-lg shadow relative z-20">
+                        <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 8.658a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
+                    </button>
+                    <button type="button" id="btn-search-modal" onclick="openSearchModal()" disabled class="bg-red-700 opacity-50 cursor-not-allowed text-white font-bold px-2.5 py-1.5 rounded-lg text-xs flex items-center space-x-1 shadow relative z-20">
+                        <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <span class="pointer-events-none hidden sm:inline">Search Record</span>
+                    </button>
+                </div>
                 <div class="text-right">
                     <span class="text-[10px] text-red-200 block uppercase font-semibold">Next ID</span>
                     <span id="app-exchange-id" class="text-xs font-extrabold bg-red-700 px-2 py-0.5 rounded-full text-white inline-block mt-0.5">...</span>
@@ -122,8 +130,8 @@
             </div>
 
             <div class="flex border-b border-gray-200">
-                <button type="button" id="tab-al" onclick="switchTab('al')" class="flex-1 py-2 font-semibold text-center border-b-2 border-red-600 text-red-600 text-xs sm:text-sm">Aluminum (₹150/kg)</button>
-                <button type="button" id="tab-st" onclick="switchTab('st')" class="flex-1 py-2 font-semibold text-center border-b-2 border-transparent text-gray-500 hover:text-red-600 text-xs sm:text-sm">Steel (₹50/kg)</button>
+                <button type="button" id="tab-al" onclick="switchTab('al')" class="flex-1 py-2 font-semibold text-center border-b-2 border-red-600 text-red-600 text-xs sm:text-sm">Aluminum (<span id="tab-al-rate">₹150</span>/kg)</button>
+                <button type="button" id="tab-st" onclick="switchTab('st')" class="flex-1 py-2 font-semibold text-center border-b-2 border-transparent text-gray-500 hover:text-red-600 text-xs sm:text-sm">Steel (<span id="tab-st-rate">₹50</span>/kg)</button>
             </div>
 
             <div>
@@ -187,7 +195,7 @@
                 <h3 class="text-sm sm:text-base font-bold text-gray-900">Search Records & Estimates</h3>
                 <button type="button" onclick="closeSearchModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg px-1.5">✕</button>
             </div>
-            
+
             <div class="flex space-x-2">
                 <input type="text" id="search-input" oninput="onSearchInput()" placeholder="Enter ID (LNex1 / Est1) or Mobile" class="flex-1 border rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white">
             </div>
@@ -198,27 +206,61 @@
         </div>
     </div>
 
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 hidden no-print">
+        <div class="bg-white rounded-xl max-w-sm w-full p-3.5 sm:p-5 shadow-2xl space-y-3">
+            <div class="flex justify-between items-center border-b pb-2.5">
+                <h3 class="text-sm sm:text-base font-bold text-gray-900">Price Settings</h3>
+                <button type="button" onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg px-1.5">✕</button>
+            </div>
+
+            <div class="space-y-2.5">
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-700 mb-1">Aluminum Rate (₹ per kg)</label>
+                    <input type="text" id="setting-al-rate" inputmode="decimal" class="w-full border rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-700 mb-1">Steel Rate (₹ per kg)</label>
+                    <input type="text" id="setting-st-rate" inputmode="decimal" class="w-full border rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-700 mb-1">Handle Deduction (kg per handle)</label>
+                    <input type="text" id="setting-handle-kg" inputmode="decimal" class="w-full border rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white">
+                </div>
+                <p id="settings-error" class="text-[10px] text-red-600 font-semibold hidden"></p>
+            </div>
+
+            <div class="flex space-x-2.5 pt-1">
+                <button type="button" onclick="resetSettingsToDefault()" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-xs active:scale-95">Reset Defaults</button>
+                <button type="button" onclick="saveSettings()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow active:scale-95">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHARE TOAST -->
+    <div id="share-toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-lg z-50 no-print"></div>
+
     <!-- SUBMISSION CONFIRMATION MODAL -->
     <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 hidden no-print">
         <div class="bg-white rounded-2xl max-w-sm w-full p-3.5 sm:p-5 shadow-2xl space-y-3 text-center relative">
-            
+
             <!-- Close Button Top Right -->
             <button type="button" onclick="closeModal()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 font-bold text-base px-1.5 py-0.5 z-10">✕</button>
 
             <div id="modal-step-review" class="space-y-3 pt-1">
                 <h3 class="text-sm sm:text-base font-bold text-gray-900 border-b pb-2">Confirm Transaction Submission</h3>
-                
+
                 <div class="space-y-1.5 text-[11px] sm:text-xs text-gray-700 bg-red-50/50 p-2.5 rounded-lg border border-red-100 text-left">
                     <div><span class="font-semibold">Exchange ID to Assign:</span> <span id="modal-exchange-id" class="font-bold text-red-600"></span></div>
                     <div><span class="font-semibold">Name:</span> <span id="modal-cust-name-display"></span></div>
                     <div><span class="font-semibold">Mobile:</span> <span id="modal-cust-phone-display"></span></div>
-                    
+
                     <div id="modal-al-block" class="border-t border-red-100 pt-1 space-y-0.5">
                         <div class="flex justify-between"><span>Aluminum Gross:</span> <span id="modal-al-gross" class="font-semibold"></span></div>
                         <div class="flex justify-between"><span>Handles Deduction:</span> <span id="modal-al-handles" class="font-semibold"></span></div>
                         <div class="flex justify-between"><span>Aluminum Amount:</span> <span id="modal-al-cost" class="font-semibold"></span></div>
                     </div>
-                    
+
                     <div id="modal-st-block" class="border-t border-red-100 pt-1 space-y-0.5">
                         <div class="flex justify-between"><span>Steel Gross:</span> <span id="modal-st-gross" class="font-semibold"></span></div>
                         <div class="flex justify-between"><span>Handles Deduction:</span> <span id="modal-st-handles" class="font-semibold"></span></div>
@@ -316,7 +358,7 @@
 
             <div id="print-materials-grid" class="grid grid-cols-2 gap-3 text-[11px] thermal-stack thermal-text-sm">
                 <div id="print-al-section" class="border-r pr-2.5 thermal-hide-col-border thermal-border-bottom">
-                    <h2 class="font-bold text-[11px] border-b pb-1 mb-1 text-red-700 thermal-text-lg">Aluminum (₹150.00 / kg)</h2>
+                    <h2 class="font-bold text-[11px] border-b pb-1 mb-1 text-red-700 thermal-text-lg">Aluminum (₹<span id="print-al-rate-label">150.00</span> / kg)</h2>
                     <div class="space-y-0.5 mb-1.5" id="print-al-items"></div>
                     <div class="border-t pt-1 space-y-0.5">
                         <div class="flex justify-between"><span>Gross Weight:</span><span id="print-al-gross">0.00 kg</span></div>
@@ -327,7 +369,7 @@
                 </div>
 
                 <div id="print-st-section" class="thermal-border-bottom">
-                    <h2 class="font-bold text-[11px] border-b pb-1 mb-1 text-gray-800 thermal-text-lg">Steel (₹50.00 / kg)</h2>
+                    <h2 class="font-bold text-[11px] border-b pb-1 mb-1 text-gray-800 thermal-text-lg">Steel (₹<span id="print-st-rate-label">50.00</span> / kg)</h2>
                     <div class="space-y-0.5 mb-1.5" id="print-st-items"></div>
                     <div class="border-t pt-1 space-y-0.5">
                         <div class="flex justify-between"><span>Gross Weight:</span><span id="print-st-gross">0.00 kg</span></div>
@@ -353,7 +395,16 @@
     <!-- App Logic -->
     <script>
         const scriptUrl = "https://script.google.com/macros/s/AKfycby_cn4b6S1RgLakDA5wUA7kch6E0QVBLfmZc6zSFx2kPRVqf6cDlHrH8meIqjDDAt-j/exec";
-        const rates = { al: 150.00, st: 50.00 };
+        const appShareUrl = "https://lalithanaturals.github.io/scrap-calc/";
+        const DEFAULT_RATES = { al: 150.00, st: 50.00 };
+        const DEFAULT_HANDLE_KG = 0.10;
+        const SETTINGS_STORAGE_KEY = 'scrapCalcSettings';
+        // rates.al / rates.st (₹ per kg) and handleDeductionKg (kg deducted per handle) are
+        // all user-editable via the Settings modal and persisted in localStorage — they no
+        // longer need to match the Google Sheet in any way, since only the computed
+        // gross/net/amount numbers are ever sent there.
+        const rates = { al: DEFAULT_RATES.al, st: DEFAULT_RATES.st };
+        let handleDeductionKg = DEFAULT_HANDLE_KG;
         let activeTab = 'al';
         let currentExchangeId = 'LNex1';
         let currentEstId = 'Est1';
@@ -363,6 +414,7 @@
         let isEstimationMode = false;
         let isAppLoaded = false;
         let searchDebounceTimer = null;
+        let calculateRafId = null;
 
         let data = {
             al: { weights: [0, 0], handles: 0 },
@@ -512,8 +564,8 @@
                 const stGrossVal = parseFloat(r.stGross || 0);
                 const alNetVal = parseFloat(r.alNet !== undefined && !isNaN(r.alNet) ? r.alNet : alGrossVal);
                 const stNetVal = parseFloat(r.stNet !== undefined && !isNaN(r.stNet) ? r.stNet : stGrossVal);
-                const alAmtVal = parseFloat(r.alAmount !== undefined && !isNaN(r.alAmount) ? r.alAmount : (alNetVal * 150));
-                const stAmtVal = parseFloat(r.stAmount !== undefined && !isNaN(r.stAmount) ? r.stAmount : (stNetVal * 50));
+                const alAmtVal = parseFloat(r.alAmount !== undefined && !isNaN(r.alAmount) ? r.alAmount : (alNetVal * rates.al));
+                const stAmtVal = parseFloat(r.stAmount !== undefined && !isNaN(r.stAmount) ? r.stAmount : (stNetVal * rates.st));
                 let totalVal = parseFloat(r.grandTotal || 0);
                 if (!totalVal || totalVal === 0 || isNaN(totalVal)) { totalVal = alAmtVal + stAmtVal; }
                 const custName = r.customerName && r.customerName.trim() !== '' ? r.customerName : 'Walk-in Customer';
@@ -620,10 +672,10 @@
 
             const alGross = parseFloat(r.alGross || 0);
             const alNet = parseFloat(r.alNet !== undefined && !isNaN(r.alNet) ? r.alNet : alGross);
-            const alAmt = parseFloat(r.alAmount !== undefined && !isNaN(r.alAmount) ? r.alAmount : (alNet * 150));
+            const alAmt = parseFloat(r.alAmount !== undefined && !isNaN(r.alAmount) ? r.alAmount : (alNet * rates.al));
             const stGross = parseFloat(r.stGross || 0);
             const stNet = parseFloat(r.stNet !== undefined && !isNaN(r.stNet) ? r.stNet : stGross);
-            const stAmt = parseFloat(r.stAmount !== undefined && !isNaN(r.stAmount) ? r.stAmount : (stNet * 50));
+            const stAmt = parseFloat(r.stAmount !== undefined && !isNaN(r.stAmount) ? r.stAmount : (stNet * rates.st));
 
             const alSection = document.getElementById('print-al-section');
             const stSection = document.getElementById('print-st-section');
@@ -632,7 +684,7 @@
             if (alGross > 0 || alNet > 0 || alAmt > 0) {
                 alSection.style.display = 'block';
                 const nonZeroAlWeights = [alNet].filter(w => w > 0);
-                document.getElementById('print-al-items').innerHTML = nonZeroAlWeights.length > 0 
+                document.getElementById('print-al-items').innerHTML = nonZeroAlWeights.length > 0
                     ? nonZeroAlWeights.map((w, i) => `<div class="flex justify-between"><span>Item ${i+1}:</span><span>${w.toFixed(2)} kg</span></div>`).join('')
                     : `<div class="flex justify-between text-gray-400 italic"><span>Aluminum items</span></div>`;
 
@@ -648,7 +700,7 @@
             if (stGross > 0 || stNet > 0 || stAmt > 0) {
                 stSection.style.display = 'block';
                 const nonZeroStWeights = [stNet].filter(w => w > 0);
-                document.getElementById('print-st-items').innerHTML = nonZeroStWeights.length > 0 
+                document.getElementById('print-st-items').innerHTML = nonZeroStWeights.length > 0
                     ? nonZeroStWeights.map((w, i) => `<div class="flex justify-between"><span>Item ${i+1}:</span><span>${w.toFixed(2)} kg</span></div>`).join('')
                     : `<div class="flex justify-between text-gray-400 italic"><span>Steel items</span></div>`;
 
@@ -724,7 +776,12 @@
             }, 50);
         }
 
-        function init() { render(); fetchNextIds(); }
+        function init() {
+            loadSettings();
+            updateRateLabels();
+            render();
+            fetchNextIds();
+        }
 
         function switchTab(tab) {
             activeTab = tab;
@@ -742,6 +799,9 @@
             if (data[activeTab].weights.length === 0) {
                 container.innerHTML = '<div class="text-xs text-gray-400 italic py-2 text-center">No items added. Click "+ Add Item" above.</div>';
             } else {
+                // Build all rows in a detached fragment, then attach once — cheaper than
+                // repeated appendChild calls that each force a layout/reflow.
+                const frag = document.createDocumentFragment();
                 data[activeTab].weights.forEach((w, idx) => {
                     const div = document.createElement('div');
                     div.className = "flex items-center space-x-2";
@@ -750,28 +810,38 @@
                         <input type="text" ${isLocked ? 'disabled' : ''} inputmode="decimal" pattern="[0-9]*" value="${w === 0 ? '' : w}" oninput="updateWeight(${idx}, this.value)" onkeydown="handleItemKeydown(event, ${idx})" placeholder="0.00" class="flex-1 border border-gray-200 rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none ${isLocked ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'} item-input">
                         <button type="button" ${isLocked ? 'disabled' : ''} onclick="removeItem(${idx})" class="text-red-400 hover:text-red-600 font-bold px-2 py-1.5">✕</button>
                     `;
-                    container.appendChild(div);
+                    frag.appendChild(div);
                 });
+                container.appendChild(frag);
             }
             document.getElementById('handle-count').innerText = data[activeTab].handles;
             calculate();
         }
 
         function handleItemKeydown(event, currentIndex) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                const inputs = Array.from(document.querySelectorAll('.item-input'));
-                const nextIndex = currentIndex + 1;
-                if (nextIndex < inputs.length) {
-                    inputs[nextIndex].focus();
-                    inputs[nextIndex].select();
-                } else if (currentIndex === 1) {
-                    const handlePlusBtn = document.getElementById('btn-handle-plus');
-                    if (handlePlusBtn) { handlePlusBtn.focus(); }
-                } else {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            const inputs = Array.from(document.querySelectorAll('.item-input'));
+            const nextIndex = currentIndex + 1;
+            const isLastInput = currentIndex === inputs.length - 1;
+
+            if (nextIndex < inputs.length) {
+                // Another item input already exists after this one — jump straight to it.
+                inputs[nextIndex].focus();
+                inputs[nextIndex].select();
+            } else if (isLastInput) {
+                // We're on the last existing item.
+                if (inputs.length === 1) {
+                    // Only one item so far: add a second one to preserve the original
+                    // two-item quick-entry flow, then focus it.
                     addItem();
                     const updatedInputs = Array.from(document.querySelectorAll('.item-input'));
                     if (updatedInputs.length > inputs.length) { updatedInputs[updatedInputs.length - 1].focus(); }
+                } else {
+                    // Two or more items already: Enter on the last one moves on to the
+                    // handle counter instead of piling on more items indefinitely.
+                    const handlePlusBtn = document.getElementById('btn-handle-plus');
+                    if (handlePlusBtn) { handlePlusBtn.focus(); }
                 }
             }
         }
@@ -801,23 +871,131 @@
 
         function updateWeight(idx, val) {
             if (!isAppLoaded) return;
-            data[activeTab].weights[idx] = parseFloat(val) || 0;
-            calculate();
+            const parsed = parseFloat(val);
+            // Guard against negative or invalid entries silently reducing the gross total.
+            data[activeTab].weights[idx] = (!isNaN(parsed) && parsed > 0) ? parsed : 0;
+            calculateDebounced();
         }
 
         function updateHandles(change) {
             if (!isAppLoaded) return;
             data[activeTab].handles = Math.max(0, data[activeTab].handles + change);
             document.getElementById('handle-count').innerText = data[activeTab].handles;
-            calculate();
+            calculateDebounced();
+        }
+
+        // Coalesce rapid-fire calls (fast typing, repeated handle taps) into a single
+        // calculate() per animation frame instead of running the full DOM update on
+        // every keystroke — this is most of the perceived "lag" during fast entry.
+        function calculateDebounced() {
+            if (calculateRafId !== null) return;
+            calculateRafId = requestAnimationFrame(() => {
+                calculateRafId = null;
+                calculate();
+            });
         }
 
         function computeMaterial(key) {
             const gross = data[key].weights.reduce((a, b) => a + b, 0);
-            const hd = data[key].handles * 0.10;
+            const hd = data[key].handles * handleDeductionKg;
             const net = Math.max(0, gross - hd);
             const cost = net * rates[key];
             return { gross, hd, net, cost };
+        }
+
+        // ---- Price / handle-deduction settings (persisted per-device in localStorage) ----
+
+        function loadSettings() {
+            try {
+                const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+                if (!raw) return;
+                const parsed = JSON.parse(raw);
+                if (typeof parsed.al === 'number' && parsed.al > 0) rates.al = parsed.al;
+                if (typeof parsed.st === 'number' && parsed.st > 0) rates.st = parsed.st;
+                if (typeof parsed.handleDeductionKg === 'number' && parsed.handleDeductionKg >= 0) handleDeductionKg = parsed.handleDeductionKg;
+            } catch (e) { console.error(e); }
+        }
+
+        function persistSettings() {
+            try {
+                localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ al: rates.al, st: rates.st, handleDeductionKg }));
+            } catch (e) { console.error(e); }
+        }
+
+        function formatRateShort(v) {
+            return Number.isInteger(v) ? v.toString() : v.toFixed(2);
+        }
+
+        function updateRateLabels() {
+            document.getElementById('tab-al-rate').innerText = `₹${formatRateShort(rates.al)}`;
+            document.getElementById('tab-st-rate').innerText = `₹${formatRateShort(rates.st)}`;
+            document.getElementById('print-al-rate-label').innerText = rates.al.toFixed(2);
+            document.getElementById('print-st-rate-label').innerText = rates.st.toFixed(2);
+        }
+
+        function openSettingsModal() {
+            document.getElementById('setting-al-rate').value = rates.al;
+            document.getElementById('setting-st-rate').value = rates.st;
+            document.getElementById('setting-handle-kg').value = handleDeductionKg;
+            document.getElementById('settings-error').classList.add('hidden');
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function resetSettingsToDefault() {
+            document.getElementById('setting-al-rate').value = DEFAULT_RATES.al;
+            document.getElementById('setting-st-rate').value = DEFAULT_RATES.st;
+            document.getElementById('setting-handle-kg').value = DEFAULT_HANDLE_KG;
+            document.getElementById('settings-error').classList.add('hidden');
+        }
+
+        function saveSettings() {
+            const alVal = parseFloat(document.getElementById('setting-al-rate').value);
+            const stVal = parseFloat(document.getElementById('setting-st-rate').value);
+            const hdVal = parseFloat(document.getElementById('setting-handle-kg').value);
+            const errEl = document.getElementById('settings-error');
+
+            if (isNaN(alVal) || alVal <= 0 || isNaN(stVal) || stVal <= 0 || isNaN(hdVal) || hdVal < 0) {
+                errEl.innerText = "Enter valid rates (> 0) and a handle deduction of 0 or more.";
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            rates.al = alVal;
+            rates.st = stVal;
+            handleDeductionKg = hdVal;
+            persistSettings();
+            updateRateLabels();
+            calculate();
+            closeSettingsModal();
+        }
+
+        // ---- Share app link ----
+
+        async function shareApp() {
+            const shareData = { title: "Scrap Calculator", text: "Lalitha Naturals — Scrap Calculator", url: appShareUrl };
+            if (navigator.share) {
+                try { await navigator.share(shareData); } catch (e) { /* user cancelled — nothing to do */ }
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(appShareUrl);
+                showShareToast("Link copied to clipboard");
+            } catch (e) {
+                window.prompt("Copy this link to share:", appShareUrl);
+            }
+        }
+
+        function showShareToast(msg) {
+            const toast = document.getElementById('share-toast');
+            if (!toast) return;
+            toast.innerText = msg;
+            toast.classList.remove('hidden');
+            clearTimeout(showShareToast._timer);
+            showShareToast._timer = setTimeout(() => toast.classList.add('hidden'), 2000);
         }
 
         function calculate() {
@@ -837,7 +1015,7 @@
             if (al.gross > 0) {
                 alSection.style.display = 'block';
                 const validAlWeights = data.al.weights.map((w, i) => ({w, i})).filter(item => item.w > 0);
-                document.getElementById('print-al-items').innerHTML = validAlWeights.length > 0 
+                document.getElementById('print-al-items').innerHTML = validAlWeights.length > 0
                     ? validAlWeights.map(item => `<div class="flex justify-between"><span>Item ${item.i + 1}:</span><span>${item.w.toFixed(2)} kg</span></div>`).join('')
                     : `<div class="flex justify-between text-gray-400 italic"><span>No Aluminum items</span></div>`;
 
@@ -853,7 +1031,7 @@
             if (st.gross > 0) {
                 stSection.style.display = 'block';
                 const validStWeights = data.st.weights.map((w, i) => ({w, i})).filter(item => item.w > 0);
-                document.getElementById('print-st-items').innerHTML = validStWeights.length > 0 
+                document.getElementById('print-st-items').innerHTML = validStWeights.length > 0
                     ? validStWeights.map(item => `<div class="flex justify-between"><span>Item ${item.i + 1}:</span><span>${item.w.toFixed(2)} kg</span></div>`).join('')
                     : `<div class="flex justify-between text-gray-400 italic"><span>No Steel items</span></div>`;
 
@@ -879,7 +1057,7 @@
 
             document.getElementById('popup-id-label').innerText = isEstimationMode ? "Estimation ID:" : "Exchange ID:";
             document.getElementById('popup-est-id').innerText = isEstimationMode ? currentEstId : currentExchangeId;
-            
+
             const modalAlBlock = document.getElementById('modal-al-block');
             const modalStBlock = document.getElementById('modal-st-block');
             if (al.gross > 0) {
@@ -892,7 +1070,8 @@
             if (st.gross > 0) {
                 modalStBlock.style.display = 'block';
                 document.getElementById('modal-st-gross').innerText = `${st.gross.toFixed(2)} kg`;
-                document.getElementById('modal-st-handles').innerText = `${data.st.handles} hdl (-${al.hd.toFixed(2)} kg) = ${st.net.toFixed(2)} kg net`;
+                // FIX: this used to read al.hd (the aluminum deduction) for the steel block.
+                document.getElementById('modal-st-handles').innerText = `${data.st.handles} hdl (-${st.hd.toFixed(2)} kg) = ${st.net.toFixed(2)} kg net`;
                 document.getElementById('modal-st-cost').innerText = `₹${st.cost.toFixed(2)}`;
             } else { modalStBlock.style.display = 'none'; }
 
@@ -908,12 +1087,15 @@
             if (st.gross > 0) {
                 popupStBlock.style.display = 'block';
                 document.getElementById('popup-st-gross').innerText = `${st.gross.toFixed(2)} kg`;
-                document.getElementById('popup-st-handles').innerText = `${data.st.handles} hdl (-${al.hd.toFixed(2)} kg) = ${st.net.toFixed(2)} kg net`;
+                // FIX: same al.hd/st.hd mixup as the modal above.
+                document.getElementById('popup-st-handles').innerText = `${data.st.handles} hdl (-${st.hd.toFixed(2)} kg) = ${st.net.toFixed(2)} kg net`;
                 document.getElementById('popup-st-amount').innerText = `₹${st.cost.toFixed(2)}`;
             } else { popupStBlock.style.display = 'none'; }
 
             document.getElementById('popup-grand-total').innerText = `₹${grandTotal.toFixed(2)}`;
-            renderSimpleBarcode(grandTotal);
+            // Barcode intentionally NOT redrawn on every calculate() — it's only ever shown
+            // on the receipt at estimation/submit/print time, so re-rendering it on each
+            // keystroke was pure wasted work (JsBarcode rebuilds an SVG from scratch).
         }
 
         function handleGetEstimation() {
@@ -941,6 +1123,7 @@
             document.getElementById('print-cust-name').innerText = name;
             document.getElementById('print-cust-phone').innerText = phone;
             calculate();
+            renderSimpleBarcode(al.cost + st.cost);
 
             document.getElementById('modal-status-icon').className = "w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto";
             document.getElementById('modal-print-title').innerText = "Estimation Ready";
@@ -1047,6 +1230,7 @@
             document.getElementById('print-cust-name').innerText = name;
             document.getElementById('print-cust-phone').innerText = phone;
             calculate();
+            renderSimpleBarcode(grandTotal);
 
             const submitBtn = document.getElementById('btn-process-submit');
             submitBtn.disabled = true;
@@ -1068,8 +1252,11 @@
                         formData.append('stAmount', st.cost);
                         formData.append('grandTotal', grandTotal);
                         formData.append('type', 'TRANSACTION');
-                        
-                        if (convertingRowIndex) { formData.append('convertFromRow', convertingRowIndex); }
+
+                        // FIX: was `if (convertingRowIndex)`, which silently dropped a valid
+                        // row index of 0 (falsy) — an estimate stored in the very first sheet
+                        // row would never get linked/marked converted. Compare to null instead.
+                        if (convertingRowIndex !== null) { formData.append('convertFromRow', convertingRowIndex); }
 
                         await fetch(scriptUrl, {
                             method: 'POST',
@@ -1101,7 +1288,8 @@
         function triggerReceiptPrint(mode) {
             setPrintMode(mode);
             calculate();
-            
+            renderSimpleBarcode(computeMaterial('al').cost + computeMaterial('st').cost);
+
             setTimeout(() => {
                 window.print();
                 convertingRowIndex = null;
