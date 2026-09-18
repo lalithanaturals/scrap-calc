@@ -542,8 +542,9 @@
             clearTimeout(searchDebounceTimer);
             const query = document.getElementById('search-input').value.trim();
             if (query === '') {
-                document.getElementById('search-results-container').innerHTML = '<div class="text-center text-xs text-gray-400 py-5">Type to search records instantly...</div>';
-                searchResultsStore = [];
+                // Empty box: fall back to the "last 4 records" view instead of an
+                // empty prompt, same as what's shown right when the modal opens.
+                loadRecentEntries();
                 return;
             }
             document.getElementById('search-results-container').innerHTML = '<div class="text-center text-xs text-gray-400 py-5">Searching...</div>';
@@ -558,6 +559,46 @@
                     document.getElementById('search-results-container').innerHTML = '<div class="text-center text-xs text-red-500 py-5">Connection error loading records.</div>';
                 }
             }, 300);
+        }
+
+        // Most-recent-first ordering for records that don't come back from a typed query.
+        // Prefers the sheet row index (higher row = added later) when the API supplies one;
+        // otherwise assumes the API returns rows oldest-first (typical for an appended
+        // sheet) and just reverses that order.
+        function sortRecordsByRecency(records) {
+            const hasRowIndex = records.some(r => r && r.rowIndex !== undefined && r.rowIndex !== null && r.rowIndex !== '');
+            if (hasRowIndex) {
+                return records.slice().sort((a, b) => {
+                    const ai = parseInt(a.rowIndex, 10);
+                    const bi = parseInt(b.rowIndex, 10);
+                    const aiSafe = isNaN(ai) ? -Infinity : ai;
+                    const biSafe = isNaN(bi) ? -Infinity : bi;
+                    return biSafe - aiSafe;
+                });
+            }
+            return records.slice().reverse();
+        }
+
+        // Loads the most recent records and shows the last 4, newest first — used both
+        // when the search modal first opens and whenever the search box is cleared.
+        async function loadRecentEntries() {
+            const container = document.getElementById('search-results-container');
+            if (!scriptUrl) {
+                container.innerHTML = '<div class="text-center text-xs text-gray-400 py-5">Type to search records...</div>';
+                searchResultsStore = [];
+                return;
+            }
+            container.innerHTML = '<div class="text-center text-xs text-gray-400 py-5">Loading recent records...</div>';
+            try {
+                const response = await fetch(`${scriptUrl}?action=search&query=`);
+                const records = await response.json();
+                const all = Array.isArray(records) ? records : [];
+                searchResultsStore = sortRecordsByRecency(all);
+                displayLimit = 4;
+                renderSearchResults();
+            } catch (err) {
+                container.innerHTML = '<div class="text-center text-xs text-red-500 py-5">Connection error loading records.</div>';
+            }
         }
 
         function renderSearchResults() {
@@ -782,8 +823,8 @@
                 searchInput.focus();
                 searchInput.value = '';
             }, 100);
-            document.getElementById('search-results-container').innerHTML = '<div class="text-center text-xs text-gray-400 py-5">Type to search records instantly...</div>';
-            searchResultsStore = [];
+            // Show the last 4 records (newest first) immediately, before the user types.
+            loadRecentEntries();
         }
 
         function closeSearchModal() {
