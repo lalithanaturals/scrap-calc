@@ -1,1366 +1,1699 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scrap Calculator</title>
-    <!-- Device-width detection: the app defaults to a fixed iPhone-16-Pro-sized card.
-         Only on Android does it switch to the old full-width "stretch" layout, since
-         Android's huge range of screen sizes/aspect ratios makes a fixed width unusable
-         there. This runs before body paint so there's no layout flash. -->
-    <script>
-        if (/Android/i.test(navigator.userAgent)) {
-            document.documentElement.classList.add('stretch-mode');
-        }
-    </script>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Barcode Library -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <style>
-        .no-print { display: block; }
-        .print-only { display: none; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Offer Calc">
+<meta name="application-name" content="Offer Calc">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="Offer Calc — discount billing calculator with scrap-exchange deduction and thermal receipt printing for Lalitha Naturals.">
+<meta name="format-detection" content="telephone=no">
 
-        /* Default: fixed iPhone 16 Pro width (402px logical/CSS px), centered on screen.
-           No "stretch to fill viewport" behavior unless .stretch-mode is set on <html>
-           (Android only, see the detection script in <head>). */
-        .app-shell {
-            width: 402px;
-            max-width: 402px;
-        }
-        html.stretch-mode .app-shell {
-            width: 100%;
-            max-width: 36rem; /* matches the old Tailwind max-w-xl */
-        }
+<link rel="manifest" href="manifest.json">
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="mask-icon" href="apple-touch-icon.png" color="#f97316">
 
-        .receipt-container {
-            position: relative;
-            background: white;
-            z-index: 1;
-            overflow: hidden;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-        .watermark-img {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 65%;
-            max-height: 80%;
-            opacity: 0.12;
-            z-index: 0;
-            pointer-events: none;
-            object-fit: contain;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
+<meta property="og:title" content="Offer Calc — Lalitha Naturals">
+<meta property="og:description" content="Offer Calc — discount billing calculator with scrap-exchange deduction and thermal receipt printing for Lalitha Naturals.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lalithanaturals.github.io/Offer-Calc/">
+<meta property="og:image" content="https://lalithanaturals.github.io/Offer-Calc/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Offer Calc — Lalitha Naturals">
+<meta name="twitter:image" content="https://lalithanaturals.github.io/Offer-Calc/icon-512.png">
 
-        @media print {
-            @page {
-                size: 80mm auto;
-                margin: 0mm !important;
-            }
+<title>Offer Calc</title>
 
-            html, body {
-                height: auto !important;
-                width: 80mm !important;
-                overflow: visible !important;
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            .no-print { display: none !important; }
-            .print-only { display: block !important; page-break-inside: avoid !important; break-inside: avoid !important; width: 100% !important; }
+<style>
+  :root{
+    --bg:#000000;
+    --panel:#0d0d0d;
+    --panel-2:#141414;
+    --card:#1a1a1a;
+    --line:#262626;
+    --line-soft:#1f1f1f;
+    --text:#ffffff;
+    --text-dim:#a3a3a3;
+    --text-faint:#6b6b6b;
+    --accent:#f97316;
+    --accent-dim:rgba(249,115,22,0.16);
+    --accent-line:rgba(249,115,22,0.4);
+    --green:#22c55e;
+    --green-dim:rgba(34,197,94,0.14);
+    --red:#f43f5e;
+    --red-dim:rgba(244,63,94,0.14);
+    --radius-lg:22px;
+    --radius-md:16px;
+    --radius-sm:12px;
+    --safe-t:env(safe-area-inset-top, 0px);
+    --safe-b:env(safe-area-inset-bottom, 0px);
+    --safe-l:env(safe-area-inset-left, 0px);
+    --safe-r:env(safe-area-inset-right, 0px);
+  }
 
-            body.print-mode-a4 @page { size: A4 portrait; margin: 10mm; }
-            body.print-mode-thermal @page { size: 80mm auto; margin: 0mm !important; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  button, input, a, .disc-chip, .pct-pill, .brand, .icon-btn{ touch-action:manipulation; }
+  html,body{ height:100%; overscroll-behavior:none; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+    -webkit-user-select:none;
+    touch-action:manipulation;
+    display:flex;
+    justify-content:center;
+    /* --app-height is set from JS to the real, current window.innerHeight (falls back to
+       100dvh if JS hasn't run yet). iOS Safari/PWA sometimes reports a stale viewport height
+       right after launch or when the browser chrome shows/hides, which is what causes the
+       page to sometimes stretch fully and sometimes leave a gap at the bottom; recomputing
+       this in JS on load/resize/orientation-change fixes it reliably on iPhone. */
+    height:100dvh;
+    height:var(--app-height, 100dvh);
+    overflow:hidden;
+  }
+  input, button, select, textarea{ font-family:inherit; }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+  input[type=number]{ -moz-appearance:textfield; }
 
-            body.print-mode-thermal .receipt-container {
-                width: 76mm !important;
-                max-width: 76mm !important;
-                padding: 2mm !important;
-                border: none !important;
-                margin: 0 auto !important;
-                color: #000 !important;
-                font-size: 11px !important;
-                line-height: 1.2 !important;
-            }
-            body.print-mode-thermal .watermark-img { display: none !important; }
-            body.print-mode-thermal .thermal-stack { display: block !important; }
-            body.print-mode-thermal .thermal-border-bottom { border-bottom: 1.5px dashed #000 !important; padding-bottom: 4px !important; margin-bottom: 4px !important; }
-            body.print-mode-thermal .thermal-text-lg { font-size: 13px !important; font-weight: 800 !important; text-transform: uppercase; }
-            body.print-mode-thermal .thermal-text-sm { font-size: 10.5px !important; font-weight: 700 !important; }
-            body.print-mode-thermal .thermal-bold { font-weight: 800 !important; font-size: 11px !important; }
-            body.print-mode-thermal .thermal-hide-col-border { border-right: none !important; padding-right: 0 !important; }
-            body.print-mode-thermal #print-grand-total { font-size: 16px !important; font-weight: 900 !important; }
-        }
-    </style>
+  .app{
+    width:100%;
+    max-width:480px;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    padding:calc(8px + var(--safe-t)) calc(12px + var(--safe-r)) calc(8px + var(--safe-b)) calc(12px + var(--safe-l));
+    gap:6px;
+    min-height:0;
+  }
+
+  .tabular{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; }
+  .mono{ font-family:'SF Mono',SFMono-Regular,ui-monospace,'Courier New',monospace; }
+
+  /* Header */
+  header{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:2px 2px 7px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .brand{ display:flex; align-items:center; gap:9px; min-width:0; cursor:pointer; }
+  .brand:active{ opacity:0.75; }
+  .brand img{
+    width:34px; height:34px; border-radius:10px; flex:0 0 auto;
+    box-shadow:0 2px 10px rgba(249,115,22,0.25);
+  }
+  .brand-text{ min-width:0; }
+  .brand-text h1{
+    margin:0; font-size:14px; font-weight:800; letter-spacing:-0.2px; color:#fff;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .brand-text span{ font-size:10.5px; color:var(--text-dim); font-weight:600; }
+  .header-actions{ display:flex; align-items:center; gap:7px; flex:0 0 auto; }
+  .icon-btn{
+    width:36px; height:36px; border-radius:12px; border:1px solid var(--line);
+    background:var(--panel-2); color:var(--text-dim); display:flex; align-items:center;
+    justify-content:center; flex:0 0 auto;
+  }
+  .icon-btn:active{ background:var(--card); transform:scale(0.94); }
+  .icon-btn svg{ width:17px; height:17px; }
+
+  /* Scrap exchange */
+  .scrap{
+    flex:0 0 auto;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius-md);
+    padding:9px 11px;
+  }
+  .scrap-head{ display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+  .scrap-head-left{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .scrap-head-left svg{ width:17px; height:17px; color:var(--accent); flex:0 0 auto; }
+  .scrap-title{ font-size:12px; font-weight:800; color:#fff; }
+  .scrap-sub{ font-size:9.5px; color:var(--text-faint); font-weight:600; }
+  .scrap-total{ font-size:13px; font-weight:800; color:var(--accent); }
+  .chev{ width:15px; height:15px; color:var(--text-faint); transition:transform .18s ease; flex:0 0 auto; }
+  .chev.open{ transform:rotate(180deg); }
+
+  .scrap-body{
+    display:none;
+    flex-direction:column;
+    gap:9px;
+    padding-top:9px;
+    margin-top:9px;
+    border-top:1px solid var(--line-soft);
+    max-height:34vh;
+    overflow-y:auto;
+  }
+  .scrap-body.open{ display:flex; }
+
+  .direct-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--bg); border:1px solid var(--accent-line); border-radius:var(--radius-sm);
+    padding:9px 10px;
+  }
+  .direct-row .lbl-title{ font-size:10.5px; font-weight:800; color:var(--accent); text-transform:uppercase; letter-spacing:.03em; }
+  .direct-row .lbl-sub{ font-size:9.5px; color:var(--text-faint); }
+  .amt-input-wrap{ position:relative; width:140px; flex:0 0 auto; }
+  .amt-input-wrap .rupee{ position:absolute; left:9px; top:50%; transform:translateY(-50%); font-weight:800; color:var(--accent); font-size:14px; }
+  .amt-input-wrap input{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
+    color:var(--accent); font-weight:800; font-size:16px; text-align:right; padding:9px 10px 9px 24px;
+  }
+  .amt-input-wrap input:focus{ outline:none; border-color:var(--accent); }
+
+  .scrap-hint{ font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); font-weight:700; }
+
+  .metal-grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .metal-card{ background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .metal-card .row1{ display:flex; align-items:center; justify-content:space-between; }
+  .metal-name{ font-size:11.5px; font-weight:700; color:#e5e5e5; }
+  .metal-rate{ font-size:9.5px; background:var(--accent-dim); color:var(--accent); padding:2px 6px; border-radius:5px; font-weight:800; }
+  .metal-input-wrap{ position:relative; }
+  .metal-input-wrap input{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:9px;
+    color:#fff; font-weight:700; font-size:14px; text-align:right; padding:8px 30px 8px 8px;
+  }
+  .metal-input-wrap input:focus{ outline:none; border-color:var(--accent); }
+  .metal-input-wrap .unit{ position:absolute; right:9px; top:50%; transform:translateY(-50%); font-size:10px; color:var(--text-faint); font-weight:700; }
+  .handles-row{ display:flex; align-items:center; justify-content:space-between; padding-top:7px; border-top:1px solid var(--line-soft); }
+  .handles-row span{ font-size:10.5px; color:var(--text-dim); }
+  .handles-row input{
+    width:52px; background:var(--panel-2); border:1px solid var(--line); border-radius:9px;
+    color:#fff; font-weight:700; font-size:13px; text-align:center; padding:6px 0;
+  }
+  .handles-row input:focus{ outline:none; border-color:var(--accent); }
+  .metal-cost{ text-align:right; font-size:11px; font-weight:800; color:#d4d4d4; }
+
+  .clear-scrap-btn{
+    align-self:flex-end; font-size:10.5px; background:var(--panel-2); color:var(--text-dim);
+    border:1px solid var(--line); padding:7px 12px; border-radius:10px; font-weight:700;
+    display:flex; align-items:center; gap:6px;
+  }
+  .clear-scrap-btn:active{ background:var(--card); }
+  .clear-scrap-btn svg{ width:13px; height:13px; }
+
+  /* Display */
+  .display{
+    flex:0 0 auto;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius-md);
+    padding:9px 13px;
+  }
+  .display-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  #active-disc-badge{
+    font-size:10.5px; font-weight:800; color:var(--accent); background:var(--accent-dim);
+    padding:4px 11px; border-radius:10px; border:1px solid var(--accent-line);
+  }
+  .display-badge-r{ font-size:9.5px; color:var(--text-faint); font-weight:800; text-transform:uppercase; letter-spacing:.06em; }
+  /* MRP is what you're typing (secondary); Final is the number you discuss with the customer (primary) */
+  .display-values{ display:flex; justify-content:space-between; align-items:flex-end; gap:12px; }
+  .dv-mrp{ text-align:left; min-width:0; }
+  .dv-final{ text-align:right; min-width:0; flex:1; }
+  .dv-mrp .l, .dv-final .l{ font-size:9px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); font-weight:800; margin-bottom:3px; }
+  .dv-final .l{ display:flex; justify-content:flex-end; gap:6px; align-items:baseline; }
+  #live-saved{ text-transform:none; letter-spacing:0; color:var(--green); font-weight:700; font-size:10.5px; }
+  #mrp-display{
+    font-size:20px; font-weight:800; color:#9a9a9a; line-height:1;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:38vw;
+  }
+  #live-final{
+    font-size:clamp(34px,10.8vw,48px); font-weight:800; letter-spacing:-0.5px; color:#fff;
+    line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  /* Discount row */
+  .item-name-input{
+    flex:0 0 auto; width:100%; background:var(--panel-2); border:1px solid var(--line);
+    border-radius:11px; padding:7px 11px; color:#eee; font-weight:600; font-size:12px;
+  }
+  .item-name-input:focus{ outline:none; border-color:var(--accent-line); }
+  .item-name-input::placeholder{ color:var(--text-faint); }
+  .disc-row{ flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 2px; }
+  .disc-row .lbl{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); font-weight:800; }
+  .add-direct-btn{
+    font-size:10.5px; background:var(--accent-dim); color:var(--accent); border:1px solid var(--accent-line);
+    padding:6px 10px; border-radius:10px; font-weight:800;
+  }
+  .add-direct-btn:active{ background:rgba(249,115,22,0.28); }
+  .disc-chips{
+    flex:0 0 auto; display:flex; gap:7px; overflow-x:auto; padding:2px 2px 4px;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .disc-chips::-webkit-scrollbar{ display:none; }
+  .disc-chip{
+    flex:0 0 auto; min-width:58px; padding:9px 14px; border-radius:14px; font-weight:800; font-size:14px;
+    background:var(--panel-2); color:#eee; border:1px solid var(--line);
+  }
+  .disc-chip.active{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent-line); }
+  .disc-chip:active{ transform:scale(0.95); }
+
+  /* Keypad */
+  .keypad{
+    flex:1 1 auto;
+    min-height:0;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    grid-template-rows:repeat(5,1fr);
+    gap:7px;
+  }
+  .key{
+    border:none; border-radius:15px; color:#fff; font-weight:800; font-size:21px;
+    display:flex; align-items:center; justify-content:center; background:var(--panel-2);
+    border:1px solid var(--line-soft);
+    min-height:0;
+  }
+  .key:active{ filter:brightness(1.35); transform:scale(0.96); }
+  .key.op{ background:var(--card); }
+  .key.zero{ grid-column:span 2; }
+  .key.add{
+    grid-row:span 5;
+    background:linear-gradient(160deg,#fb923c,#ea580c);
+    display:flex; flex-direction:column; gap:5px; font-size:13px; letter-spacing:.04em;
+    box-shadow:0 6px 18px rgba(234,88,12,0.35);
+    border:1px solid rgba(255,255,255,0.15);
+  }
+  .key.add svg{ width:26px; height:26px; }
+  .key svg{ width:24px; height:24px; }
+
+  /* Summary bar */
+  .summary{
+    flex:0 0 auto;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius-md);
+    padding:9px 11px;
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+  .summary-top{ display:flex; align-items:center; justify-content:space-between; }
+  .summary-count{ font-size:11px; color:var(--text-dim); font-weight:700; }
+  .summary-count b{ color:#fff; }
+  .summary-saved-chip{ font-size:10.5px; color:var(--green); font-weight:700; background:var(--green-dim); padding:3px 9px; border-radius:8px; }
+  .summary-scrap{ font-size:10.5px; color:var(--accent); font-weight:700; background:var(--accent-dim); padding:3px 9px; border-radius:8px; display:none; align-items:center; }
+  .summary-scrap.show{ display:inline-flex; }
+  .summary-chiprow{ display:flex; gap:6px; flex-wrap:wrap; }
+  .summary-main{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .summary-mrp{ font-size:10.5px; color:var(--text-faint); font-weight:700; }
+  .summary-mrp b{ color:#d4d4d4; font-weight:800; display:block; font-size:14px; margin-top:1px; }
+  .summary-grand{ text-align:right; }
+  .summary-grand .lbl{ font-size:9.5px; color:var(--accent); font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+  .summary-grand .val{ font-size:22px; font-weight:800; color:#fff; letter-spacing:-0.5px; }
+  .summary-actions{ display:flex; gap:8px; }
+  .btn{
+    border:none; border-radius:14px; font-weight:800; font-size:13px; padding:11px 0;
+    display:flex; align-items:center; justify-content:center; gap:8px; flex:1;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn svg{ width:18px; height:18px; }
+  .btn-primary{ background:var(--panel-2); color:#fff; border:1px solid var(--line); }
+  .btn-danger{ background:var(--red-dim); color:var(--red); border:1px solid rgba(244,63,94,0.3); flex:0 0 auto; padding:11px 16px; }
+
+  /* Modals — always centered on screen, never anchored to the bottom */
+  .overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.82); backdrop-filter:blur(6px);
+    display:none; align-items:center; justify-content:center; z-index:50; padding:16px;
+  }
+  .overlay.show{ display:flex; }
+
+  .sheet{
+    width:100%; max-width:440px; background:var(--panel); border:1px solid var(--line);
+    border-radius:24px; padding:16px 16px calc(16px + var(--safe-b));
+    max-height:82vh; display:flex; flex-direction:column;
+  }
+
+  .sheet-head{ display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; margin-bottom:12px; border-bottom:1px solid var(--line-soft); }
+  .sheet-head h3{ margin:0; font-size:16px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; }
+  .sheet-head h3 svg{ width:19px; height:19px; color:var(--accent); }
+  .sheet-close{ color:var(--text-dim); padding:6px; }
+  .sheet-close svg{ width:22px; height:22px; }
+
+  .items-list{ flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:9px; padding-right:2px; }
+  .empty-note{ text-align:center; color:var(--text-faint); font-size:13px; padding:36px 0; font-weight:600; }
+
+  .item-row{ background:var(--panel-2); border:1px solid var(--line); border-radius:16px; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .item-row.off{ opacity:.4; filter:grayscale(1); }
+  .item-row.exchange{ background:var(--accent-dim); border-color:var(--accent-line); }
+  .item-left{ display:flex; align-items:center; gap:10px; min-width:0; flex:1 1 auto; }
+  .item-info{ min-width:0; flex:1 1 auto; }
+  .item-idx{ width:30px; height:30px; border-radius:9px; background:var(--card); color:#e5e5e5; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .item-idx.orange{ background:var(--accent-dim); color:var(--accent); }
+  /* MRP/name is secondary (small); the Final amount is what's discussed with the customer (large) */
+  .item-name{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:12.5px; font-weight:700; color:#ddd; min-width:0; }
+  .item-name-text{ min-width:0; word-break:break-word; }
+  .item-badge{ flex:0 0 auto; }
+  .item-badge{ font-size:9.5px; font-weight:800; padding:2px 6px; border-radius:6px; margin-left:6px; }
+  .item-badge.pct{ background:var(--accent-dim); color:var(--accent); border:1px solid var(--accent-line); }
+  .item-badge.direct{ background:var(--card); color:#ccc; }
+  .item-sub{ font-size:10px; color:var(--text-faint); margin-top:2px; }
+  .item-sub b{ color:var(--green); font-weight:800; }
+  .item-right{ display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+  .item-amt{ text-align:right; }
+  .item-amt .l{ font-size:9px; text-transform:uppercase; color:var(--text-faint); font-weight:700; }
+  .item-amt .v{ font-size:21px; font-weight:800; color:#fff; letter-spacing:-0.3px; }
+  .item-amt .v.deduct{ color:var(--accent); }
+  .ghost-btn{ color:var(--text-dim); padding:7px; border-radius:10px; }
+  .ghost-btn:active{ background:var(--card); }
+  .ghost-btn svg{ width:18px; height:18px; }
+  .ghost-btn.danger:active{ color:var(--red); }
+
+  .sheet-footer{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line-soft); display:flex; flex-direction:column; gap:10px; }
+  .payable-row{ display:flex; justify-content:space-between; align-items:center; background:var(--panel-2); border:1px solid var(--line); border-radius:16px; padding:13px 15px; }
+  .payable-row .l{ font-size:10.5px; text-transform:uppercase; color:var(--accent); font-weight:800; letter-spacing:.04em; }
+  .payable-row .v{ font-size:22px; font-weight:800; color:#fff; }
+  .footer-btns{ display:flex; gap:9px; }
+
+  /* Receipt preview */
+  .receipt-wrap{ background:#fff; border-radius:14px; padding:16px 14px; overflow-y:auto; max-height:48vh; -webkit-user-select:text; user-select:text; }
+
+  /* ---------- Receipt design (shared by the on-screen preview, native print, and the
+     captured-to-image PDF, so all three always look identical) ---------- */
+  /* All sizes below are in em, relative to font-size set on .rcpt itself — that single value
+     is the only thing that differs between the on-screen preview (13px), native print (a small
+     pt size that actually fits 80mm), and the offscreen clone captured for the PDF (matched to
+     its fixed pixel width), so the whole receipt scales as one proportional unit everywhere. */
+  .rcpt{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#111; background:#fff; font-size:13px; }
+  .rcpt-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:0.8em; }
+  .rcpt-title{ font-size:1.27em; font-weight:800; letter-spacing:-0.2px; color:#111; }
+  .rcpt-title2{ font-size:1.12em; font-weight:800; color:#111; margin-top:0.15em; }
+  .rcpt-head-right{ text-align:right; flex:0 0 auto; }
+  .rcpt-label{ font-size:0.65em; font-weight:800; color:#9aa1ab; text-transform:uppercase; letter-spacing:.06em; }
+  .rcpt-id{ font-size:0.96em; font-weight:800; color:#111; }
+  .rcpt-sub{ font-size:0.81em; color:#6b7280; font-weight:700; margin-top:0.45em; }
+  .rcpt-dash{ border-top:1.5px dashed #c9ced6; margin:0.77em 0; }
+  .rcpt-thick{ border-top:2.5px solid #111; margin:0.77em 0; }
+  .rcpt-section{ margin-bottom:0.15em; }
+  .rcpt-section-title{ display:flex; align-items:center; justify-content:space-between; gap:0.6em; font-size:0.88em; font-weight:800; color:#374151; text-transform:uppercase; letter-spacing:.03em; margin-bottom:0.46em; }
+  .rcpt-tag{ font-size:0.73em; font-weight:800; color:#b45309; background:#fef3c7; padding:0.15em 0.6em; border-radius:20px; text-transform:none; letter-spacing:0; white-space:nowrap; }
+  .rcpt-row{ display:flex; justify-content:space-between; gap:0.8em; font-size:0.92em; color:#4b5563; font-weight:600; padding:0.19em 0; }
+  .rcpt-row b{ color:#111; font-weight:800; }
+  .rcpt-row-strong{ font-size:1em; }
+  .rcpt-row-strong span{ color:#111; font-weight:800; }
+  .rcpt-row-strong b{ color:#111; font-weight:800; }
+  .rcpt-hr{ border-top:1px solid #eceff2; margin:0.38em 0; }
+  .rcpt-totals .rcpt-row{ font-size:0.96em; }
+  .rcpt-grand{ text-align:left; }
+  .rcpt-grand-label{ font-size:0.92em; font-weight:800; color:#111; text-transform:uppercase; letter-spacing:.03em; }
+  .rcpt-grand-amt{ font-size:1.92em; font-weight:800; color:#111; margin-top:0.2em; letter-spacing:-0.3px; }
+  .rcpt-footer{ text-align:center; font-size:0.81em; color:#6b7280; font-weight:700; margin-top:0.15em; line-height:1.5; }
+
+  /* Confirm modal */
+  .confirm-sheet{ max-width:340px; align-items:center; text-align:center; border-radius:24px; padding:24px 22px calc(22px + var(--safe-b)); }
+  .confirm-icon{ width:52px; height:52px; border-radius:16px; background:var(--red-dim); color:var(--red); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
+  .confirm-icon svg{ width:26px; height:26px; }
+  #confirm-title{ font-size:16px; font-weight:800; color:#fff; margin:0 0 6px; }
+  #confirm-desc{ font-size:12.5px; color:var(--text-dim); margin:0 0 16px; line-height:1.4; }
+  .confirm-btns{ display:flex; gap:9px; width:100%; }
+  .btn-cancel{ background:var(--panel-2); color:#d4d4d4; border:1px solid var(--line); flex:1; padding:12px 0; border-radius:14px; font-weight:800; font-size:13px; }
+  .btn-yes{ background:var(--red); color:#fff; flex:1; padding:12px 0; border-radius:14px; font-weight:800; font-size:13px; border:none; }
+
+  /* Settings modal (manage %) */
+  .settings-add-row{ display:flex; gap:9px; margin-bottom:14px; }
+  .settings-add-row input{
+    flex:1; background:var(--panel-2); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; color:#fff; font-weight:800; font-size:16px;
+  }
+  .settings-add-row input:focus{ outline:none; border-color:var(--accent); }
+  .settings-add-row button{
+    background:var(--accent); color:#fff; border:none; padding:0 18px; border-radius:14px; font-weight:800; font-size:13px;
+  }
+  .settings-label{ font-size:10.5px; text-transform:uppercase; color:var(--text-dim); font-weight:800; margin-bottom:8px; letter-spacing:.04em; }
+  .pct-pill-list{ display:flex; flex-wrap:wrap; gap:8px; max-height:34vh; overflow-y:auto; padding:2px; }
+  .pct-pill{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:14px; padding:10px 14px;
+    display:flex; align-items:center; gap:10px; font-weight:800; font-size:14px; color:#fff;
+  }
+  .pct-pill button{ color:var(--text-faint); display:flex; }
+  .pct-pill button:active{ color:var(--red); }
+  .pct-pill button svg{ width:16px; height:16px; }
+  .rate-edit-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; }
+  .rate-edit-field label{ display:block; font-size:9.5px; color:var(--text-faint); font-weight:700; margin-bottom:5px; }
+  .rate-edit-field input{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:12px;
+    padding:10px 8px; color:#fff; font-weight:800; font-size:14px; text-align:center;
+  }
+  .rate-edit-field input:focus{ outline:none; border-color:var(--accent); }
+  .save-rates-btn{
+    width:100%; background:var(--panel-2); border:1px solid var(--accent-line); color:var(--accent);
+    padding:11px; border-radius:14px; font-weight:800; font-size:13px;
+  }
+  .save-rates-btn:active{ background:var(--accent-dim); }
+  .settings-done{ margin-top:16px; padding-top:12px; border-top:1px solid var(--line-soft); }
+  .settings-done button{
+    width:100%; background:var(--panel-2); color:#eee; border:1px solid var(--line); padding:13px 0;
+    border-radius:14px; font-weight:800; font-size:13px;
+  }
+
+  /* Direct-amount modal */
+  .direct-modal-sheet{ max-width:340px; border-radius:24px; padding:22px 20px calc(20px + var(--safe-b)); }
+  .direct-modal-sheet h3{ margin:0 0 4px; font-size:16px; font-weight:800; color:#fff; }
+  .direct-modal-sheet p{ margin:0 0 16px; font-size:12px; color:var(--text-dim); }
+  .direct-modal-input{ position:relative; margin-bottom:16px; }
+  .direct-modal-input .rupee{ position:absolute; left:14px; top:50%; transform:translateY(-50%); font-weight:800; color:var(--accent); font-size:18px; }
+  .direct-modal-input input{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:16px;
+    color:#fff; font-weight:800; font-size:22px; text-align:right; padding:14px 16px 14px 34px;
+  }
+  .direct-modal-input input:focus{ outline:none; border-color:var(--accent); }
+  .direct-modal-name{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:12px;
+    padding:9px 12px; color:#fff; font-weight:600; font-size:12.5px; margin-bottom:16px;
+  }
+  .direct-modal-name:focus{ outline:none; border-color:var(--accent); }
+  .direct-modal-btns{ display:flex; gap:9px; }
+
+  /* Logo preview */
+  .logo-preview-sheet{ max-width:300px; align-items:center; text-align:center; border-radius:26px; padding:26px 22px calc(22px + var(--safe-b)); }
+  .logo-preview-img{ width:170px; height:170px; border-radius:32px; margin-bottom:16px; box-shadow:0 10px 30px rgba(249,115,22,0.3); }
+  .logo-preview-sheet h3{ margin:0 0 3px; font-size:18px; font-weight:800; color:#fff; }
+  .logo-preview-sheet p{ margin:0 0 18px; font-size:12.5px; color:var(--text-dim); }
+
+  /* Toast */
+  .toast{
+    position:fixed; bottom:calc(24px + var(--safe-b)); left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2); color:#fff; font-size:13px; font-weight:700; padding:12px 18px;
+    border-radius:16px; border:1px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,0.4);
+    display:flex; align-items:center; gap:9px; z-index:60; opacity:0; pointer-events:none;
+    transition:all .25s ease; max-width:88vw;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast svg{ width:16px; height:16px; color:var(--green); flex:0 0 auto; }
+
+  /* Print-only receipt (native print / AirPrint path) */
+  #print-area{ display:none; }
+  @media print{
+    body *{ visibility:hidden; }
+    #print-area, #print-area *{ visibility:visible; }
+    #print-area{
+      display:block; position:fixed; left:0; top:0; width:80mm; margin:0; padding:2.5mm 3mm;
+      -webkit-print-color-adjust:exact; print-color-adjust:exact;
+    }
+    /* Darker/bolder than the on-screen version so light-printing thermal heads still come
+       out legible — heavier font-weight plus a hairline text-stroke to thicken every glyph.
+       7.5pt is the base — every .rcpt-* size above is in em, so this one number scales the
+       whole receipt down to actually fit inside the 80mm page (the on-screen 13px base is
+       tuned for the wider preview modal, not a physical thermal-paper width). */
+    #print-area .rcpt{ font-size:7.5pt; }
+    #print-area .rcpt *{
+      -webkit-print-color-adjust:exact; print-color-adjust:exact;
+      -webkit-text-stroke:0.25px currentColor;
+    }
+    #print-area .rcpt-title, #print-area .rcpt-title2,
+    #print-area .rcpt-id, #print-area .rcpt-section-title,
+    #print-area .rcpt-grand-label, #print-area .rcpt-grand-amt,
+    #print-area .rcpt-row b, #print-area .rcpt-row-strong span{ color:#000 !important; font-weight:900; }
+    #print-area .rcpt-row{ color:#000; font-weight:700; }
+    #print-area .rcpt-label, #print-area .rcpt-sub, #print-area .rcpt-footer{ color:#000; }
+    #print-area .rcpt-dash{ border-top:1.6px dashed #000; }
+    #print-area .rcpt-hr{ border-top:1px solid #000; }
+    #print-area .rcpt-thick{ border-top:3px solid #000; }
+    #print-area .rcpt-tag{ background:none; color:#000; border:1.4px solid #000; }
+  }
+  @page{ size:80mm auto; margin:0; }
+</style>
 </head>
-<body class="bg-rose-50 min-h-screen p-2 sm:p-3 md:p-6 font-sans">
+<body>
 
-    <!-- FULL PAGE LOADING OVERLAY -->
-    <div id="page-loader" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center space-y-4 transition-opacity duration-300">
-        <div class="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-sm font-bold text-gray-700 tracking-wide">Loading application and IDs...</p>
+<div class="app">
+
+  <header>
+    <div class="brand" onclick="openLogoPreview()" role="button" title="Tap to preview logo">
+      <img src="apple-touch-icon.png" alt="Offer Calc">
+      <div class="brand-text">
+        <h1>Offer Calc</h1>
+        <span>Lalitha Naturals</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="shareApp()" title="Share this app">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342a4 4 0 100-2.684m0 2.684a4 4 0 010-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a4 4 0 105.367-5.367 4 4 0 00-5.367 5.367zm0 9.316a4 4 0 105.367 5.367 4 4 0 00-5.367-5.367z"/></svg>
+      </button>
+      <button class="icon-btn" onclick="toggleSettingsModal()" title="Manage discount % and scrap rates">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+      <button class="icon-btn" onclick="confirmReset()" title="Reset everything">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Scrap Exchange -->
+  <div class="scrap">
+    <div class="scrap-head" onclick="toggleScrapSection()">
+      <div class="scrap-head-left">
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <div>
+          <div class="scrap-title">Scrap Exchange</div>
+          <div class="scrap-sub">Tap to enter amount or weights</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div id="live-total-exchange" class="scrap-total tabular">₹0.00</div>
+        <svg id="scrap-toggle-icon" class="chev" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+      </div>
     </div>
 
-    <!-- ================= APP INTERFACE (NO-PRINT) ================= -->
-    <div id="app-shell" class="app-shell mx-auto bg-white rounded-xl shadow-lg overflow-hidden no-print border border-red-100">
-        <div class="bg-red-600 p-3.5 sm:p-5 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-            <div>
-                <span class="text-[11px] font-semibold uppercase tracking-wider text-red-200 block mb-0.5">Lalitha Naturals</span>
-                <h1 class="text-lg sm:text-xl font-bold tracking-wide">Scrap Calculator</h1>
-            </div>
-            <div class="flex items-center space-x-1.5 sm:space-x-2 w-full sm:w-auto justify-between sm:justify-end">
-                <div class="flex items-center space-x-1.5">
-                    <button type="button" id="btn-settings" onclick="openSettingsModal()" title="Price Settings" class="bg-red-700 hover:bg-red-800 text-white p-2 rounded-lg shadow relative z-20">
-                        <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </button>
-                    <button type="button" id="btn-share" onclick="shareApp()" title="Share App" class="bg-red-700 hover:bg-red-800 text-white p-2 rounded-lg shadow relative z-20">
-                        <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 8.658a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path></svg>
-                    </button>
-                    <button type="button" id="btn-search-modal" onclick="openSearchModal()" disabled class="bg-red-700 opacity-50 cursor-not-allowed text-white font-bold px-2.5 py-1.5 rounded-lg text-xs flex items-center space-x-1 shadow relative z-20">
-                        <svg class="w-3.5 h-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        <span class="pointer-events-none hidden sm:inline">Search Record</span>
-                    </button>
-                </div>
-                <div class="text-right">
-                    <span class="text-[10px] text-red-200 block uppercase font-semibold">Next ID</span>
-                    <span id="app-exchange-id" class="text-xs font-extrabold bg-red-700 px-2 py-0.5 rounded-full text-white inline-block mt-0.5">...</span>
-                </div>
-            </div>
+    <div id="scrap-body" class="scrap-body">
+      <div class="direct-row">
+        <div>
+          <div class="lbl-title">Direct Amount</div>
+          <div class="lbl-sub">Overrides weight calc below</div>
+        </div>
+        <div class="amt-input-wrap">
+          <span class="rupee">₹</span>
+          <input type="number" inputmode="decimal" id="ex-direct-amount" placeholder="0.00" min="0" step="1" enterkeyhint="done" oninput="calculateExchangeValue()">
+        </div>
+      </div>
+
+      <div class="scrap-hint">Or calculate by weight</div>
+      <div class="metal-grid">
+        <div class="metal-card">
+          <div class="row1">
+            <span class="metal-name">Aluminium</span>
+            <span class="metal-rate" id="metal-rate-alu">₹150/kg</span>
+          </div>
+          <div class="metal-input-wrap">
+            <input type="number" inputmode="decimal" id="ex-aluminum-weight" placeholder="0" min="0" step="0.1" enterkeyhint="done" oninput="calculateExchangeValue()">
+            <span class="unit">kg</span>
+          </div>
+          <div class="handles-row">
+            <span id="handle-label-alu">Handles (−100g)</span>
+            <input type="number" inputmode="numeric" id="ex-aluminum-handles" placeholder="0" min="0" enterkeyhint="done" oninput="calculateExchangeValue()">
+          </div>
+          <div class="metal-cost tabular" id="ex-aluminum-cost">₹0.00</div>
         </div>
 
-        <div class="p-3.5 sm:p-5 space-y-3 sm:space-y-4">
-            <div class="bg-red-50/50 p-2.5 sm:p-3 rounded-lg border border-red-100 space-y-2.5">
-                <h3 class="text-xs font-bold text-red-800 uppercase tracking-wide border-b border-red-100 pb-1.5">Customer Information (Optional)</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5">
-                    <div>
-                        <label class="block text-[11px] font-semibold text-gray-700 mb-1">Name</label>
-                        <input type="text" id="cust-name" disabled placeholder="Optional" autocapitalize="words" onkeydown="handleNameKeydown(event)" class="w-full border rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none bg-gray-100 cursor-not-allowed">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-semibold text-gray-700 mb-1">Mobile (Optional)</label>
-                        <input type="text" id="cust-phone" disabled inputmode="numeric" pattern="[0-9]*" maxlength="10" placeholder="Optional" oninput="validatePhoneInput(this)" onkeydown="handlePhoneKeydown(event)" class="w-full border rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none bg-gray-100 cursor-not-allowed">
-                        <span id="phone-error" class="text-[10px] text-red-600 font-semibold hidden block mt-0.5">Mobile number can contain up to 10 digits.</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex border-b border-gray-200">
-                <button type="button" id="tab-al" onclick="switchTab('al')" class="flex-1 py-2 font-semibold text-center border-b-2 border-red-600 text-red-600 text-xs sm:text-sm">Aluminum (<span id="tab-al-rate">₹150</span>/kg)</button>
-                <button type="button" id="tab-st" onclick="switchTab('st')" class="flex-1 py-2 font-semibold text-center border-b-2 border-transparent text-gray-500 hover:text-red-600 text-xs sm:text-sm">Steel (<span id="tab-st-rate">₹50</span>/kg)</button>
-            </div>
-
-            <div>
-                <div class="flex justify-between items-center mb-2">
-                    <label class="text-xs font-semibold text-gray-700" id="item-label">Aluminum Item Weights (kg)</label>
-                    <button type="button" id="btn-add-item" onclick="addItem()" disabled class="text-[11px] bg-gray-100 text-gray-400 font-bold px-2.5 py-1 rounded-md border border-gray-200 cursor-not-allowed">+ Add Item</button>
-                </div>
-                <div id="item-list" class="space-y-2 max-h-48 overflow-y-auto p-0.5"></div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Number of Handles</label>
-                <div class="flex items-center space-x-3 bg-red-50/40 p-2.5 rounded-lg border border-red-100">
-                    <button type="button" id="btn-handle-minus" disabled onclick="updateHandles(-1)" class="w-9 h-9 bg-gray-100 border border-gray-200 rounded-lg font-bold text-gray-300 cursor-not-allowed flex items-center justify-center text-base">-</button>
-                    <span id="handle-count" class="text-base font-bold text-gray-800 flex-1 text-center">0</span>
-                    <button type="button" id="btn-handle-plus" disabled onclick="updateHandles(1)" class="w-9 h-9 bg-gray-100 border border-gray-200 rounded-lg font-bold text-gray-300 cursor-not-allowed flex items-center justify-center text-base">+</button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
-                <div class="bg-red-50 border border-red-100 p-2.5 sm:p-3 rounded-lg text-center">
-                    <span class="text-[10px] sm:text-[11px] text-red-600 font-bold uppercase tracking-wide">Aluminum Total</span>
-                    <div id="al-total-display" class="text-base sm:text-lg font-extrabold text-red-700 mt-0.5">₹0.00</div>
-                </div>
-                <div class="bg-slate-50 border border-slate-200 p-2.5 sm:p-3 rounded-lg text-center">
-                    <span class="text-[10px] sm:text-[11px] text-slate-600 font-bold uppercase tracking-wide">Steel Total</span>
-                    <div id="st-total-display" class="text-base sm:text-lg font-extrabold text-slate-800 mt-0.5">₹0.00</div>
-                </div>
-            </div>
-
-            <!-- Grand Total Display Card -->
-            <div class="bg-gradient-to-r from-red-600 to-rose-700 p-3.5 rounded-xl shadow-md text-white flex items-center justify-between">
-                <div>
-                    <span class="text-[11px] uppercase font-bold tracking-wider text-red-200 block">Combined Total Payout</span>
-                    <span class="text-[10px] text-red-100">Aluminum + Steel</span>
-                </div>
-                <div id="grand-total-display" class="text-xl sm:text-2xl font-extrabold tracking-tight">₹0.00</div>
-            </div>
-
-            <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
-                <button type="button" id="btn-refresh" disabled onclick="resetForm()" class="bg-gray-100 text-gray-400 font-bold py-2.5 px-3 rounded-lg border border-gray-300 cursor-not-allowed flex items-center justify-center space-x-1 sm:w-24 text-xs">
-                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    <span>Refresh</span>
-                </button>
-                <button type="button" id="btn-estimation" disabled onclick="handleGetEstimation()" class="flex-1 bg-gray-200 text-gray-400 font-bold py-2.5 px-3 rounded-lg cursor-not-allowed flex items-center justify-center space-x-1.5 text-xs">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                    <span>Get Estimation</span>
-                </button>
-                <button type="button" id="btn-submit" disabled onclick="handleSubmitOrder()" class="flex-1 bg-gray-200 text-gray-400 font-bold py-2.5 px-3 rounded-lg cursor-not-allowed flex items-center justify-center space-x-1.5 text-xs">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span>Submit Order</span>
-                </button>
-            </div>
+        <div class="metal-card">
+          <div class="row1">
+            <span class="metal-name">Steel</span>
+            <span class="metal-rate" id="metal-rate-steel">₹50/kg</span>
+          </div>
+          <div class="metal-input-wrap">
+            <input type="number" inputmode="decimal" id="ex-steel-weight" placeholder="0" min="0" step="0.1" enterkeyhint="done" oninput="calculateExchangeValue()">
+            <span class="unit">kg</span>
+          </div>
+          <div class="handles-row">
+            <span id="handle-label-steel">Handles (−100g)</span>
+            <input type="number" inputmode="numeric" id="ex-steel-handles" placeholder="0" min="0" enterkeyhint="done" oninput="calculateExchangeValue()">
+          </div>
+          <div class="metal-cost tabular" id="ex-steel-cost">₹0.00</div>
         </div>
+      </div>
+
+      <button class="clear-scrap-btn" onclick="confirmClearScrap(event)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span>Clear Scrap Inputs</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Display -->
+  <div class="display">
+    <div class="display-top">
+      <span id="active-disc-badge">20% OFF Active</span>
+      <span class="display-badge-r">MRP Input</span>
+    </div>
+    <div class="display-values">
+      <div class="dv-mrp">
+        <div class="l">MRP</div>
+        <div id="mrp-display" class="tabular">0</div>
+      </div>
+      <div class="dv-final">
+        <div class="l">Final <span id="live-saved" class="tabular">Save ₹0.00</span></div>
+        <div id="live-final" class="tabular">₹0.00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Optional item name (small, compact — only fill in if you want it on the bill/receipt) -->
+  <input type="text" id="item-name-input" class="item-name-input" placeholder="Item name (optional)" maxlength="40" enterkeyhint="done">
+
+  <!-- Discount selector -->
+  <div class="disc-row">
+    <span class="lbl">Select Discount %</span>
+    <button class="add-direct-btn" onclick="openDirectModal()">+ Add Direct Amount</button>
+  </div>
+  <div id="discount-chips" class="disc-chips"></div>
+
+  <!-- Keypad -->
+  <div class="keypad">
+    <button class="key op" onclick="clearCalculator()">C</button>
+    <button class="key op" onclick="appendValue('00')">00</button>
+    <button class="key op" onclick="backspace()" title="Backspace">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414-6.414a2 2 0 011.414-.586H19a2 2 0 012 2v12a2 2 0 01-2 2h-8.172a2 2 0 01-1.414-.586L3 12z"/></svg>
+    </button>
+    <button class="key add" onclick="addItem()">
+      <svg fill="none" stroke="currentColor" stroke-width="3.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+      <span>ADD</span>
+    </button>
+
+    <button class="key" onclick="appendValue('7')">7</button>
+    <button class="key" onclick="appendValue('8')">8</button>
+    <button class="key" onclick="appendValue('9')">9</button>
+
+    <button class="key" onclick="appendValue('4')">4</button>
+    <button class="key" onclick="appendValue('5')">5</button>
+    <button class="key" onclick="appendValue('6')">6</button>
+
+    <button class="key" onclick="appendValue('1')">1</button>
+    <button class="key" onclick="appendValue('2')">2</button>
+    <button class="key" onclick="appendValue('3')">3</button>
+
+    <button class="key zero" onclick="appendValue('0')">0</button>
+    <button class="key" onclick="appendValue('.')">.</button>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <div class="summary-top">
+      <span class="summary-count">Items: <b id="summary-count">0</b></span>
+      <div class="summary-chiprow">
+        <span class="summary-saved-chip">Saved <span id="summary-saved" class="tabular">₹0.00</span></span>
+        <span id="summary-scrap-chip" class="summary-scrap">Scrap −<span id="summary-total-exchange" class="tabular">₹0.00</span></span>
+      </div>
+    </div>
+    <div class="summary-main">
+      <div class="summary-mrp">Total MRP<b id="summary-total-mrp" class="tabular">₹0.00</b></div>
+      <div class="summary-grand">
+        <div class="lbl">Grand Total</div>
+        <div class="val tabular" id="summary-grand-total">₹0.00</div>
+      </div>
+    </div>
+    <div class="summary-actions">
+      <button class="btn btn-primary" onclick="toggleBillModal()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+        <span>View Bill</span>
+      </button>
+      <button class="btn btn-danger" onclick="confirmReset()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bill Modal -->
+<div id="bill-modal" class="overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        <span>Itemized Bill</span>
+      </h3>
+      <button class="sheet-close" onclick="toggleBillModal()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
 
-    <!-- SEARCH MODAL -->
-    <div id="search-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 hidden no-print">
-        <div class="bg-white rounded-xl max-w-md w-full p-3.5 sm:p-5 shadow-2xl space-y-3 max-h-[85vh] flex flex-col">
-            <div class="flex justify-between items-center border-b pb-2.5">
-                <h3 class="text-sm sm:text-base font-bold text-gray-900">Search Records & Estimates</h3>
-                <button type="button" onclick="closeSearchModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg px-1.5">✕</button>
-            </div>
-
-            <div class="flex space-x-2">
-                <input type="text" id="search-input" oninput="onSearchInput()" placeholder="Enter ID (LNex1 / Est1) or Mobile" class="flex-1 border rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white">
-            </div>
-
-            <div id="search-results-container" class="flex-1 overflow-y-auto space-y-2.5 pt-1">
-                <div class="text-center text-xs text-gray-400 py-5">Type to search records instantly...</div>
-            </div>
-        </div>
+    <div id="bill-items-list" class="items-list">
+      <div class="empty-note">No items added yet.</div>
     </div>
 
-    <!-- SETTINGS MODAL -->
-    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 hidden no-print">
-        <div class="bg-white rounded-xl max-w-sm w-full p-3.5 sm:p-5 shadow-2xl space-y-3">
-            <div class="flex justify-between items-center border-b pb-2.5">
-                <h3 class="text-sm sm:text-base font-bold text-gray-900">Price Settings</h3>
-                <button type="button" onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-600 font-bold text-lg px-1.5">✕</button>
-            </div>
+    <div class="sheet-footer">
+      <div class="payable-row">
+        <span class="l">Final Payable</span>
+        <span class="v tabular" id="modal-grand-total">₹0.00</span>
+      </div>
+      <div class="footer-btns">
+        <button class="btn btn-primary" onclick="openPrintPreview()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          <span>Preview</span>
+        </button>
+        <button class="btn" style="background:var(--accent);color:#fff;" onclick="downloadPDF()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          <span>Save PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
-            <div class="space-y-2.5">
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-700 mb-1">Aluminum Rate (₹ per kg)</label>
-                    <input type="text" id="setting-al-rate" inputmode="decimal" class="w-full border rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-700 mb-1">Steel Rate (₹ per kg)</label>
-                    <input type="text" id="setting-st-rate" inputmode="decimal" class="w-full border rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-gray-700 mb-1">Handle Deduction (kg per handle)</label>
-                    <input type="text" id="setting-handle-kg" inputmode="decimal" class="w-full border rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white">
-                </div>
-                <p id="settings-error" class="text-[10px] text-red-600 font-semibold hidden"></p>
-            </div>
-
-            <div class="flex space-x-2.5 pt-1">
-                <button type="button" onclick="resetSettingsToDefault()" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-xs active:scale-95">Reset Defaults</button>
-                <button type="button" onclick="saveSettings()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow active:scale-95">Save</button>
-            </div>
-        </div>
+<!-- Print Preview Modal -->
+<div id="print-preview-modal" class="overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        <span>Thermal Receipt Preview</span>
+      </h3>
+      <button class="sheet-close" onclick="closePrintPreview()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
 
-    <!-- SHARE TOAST -->
-    <div id="share-toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-lg z-50 no-print"></div>
+    <div class="receipt-wrap"><div id="receipt-preview-container" class="rcpt"></div></div>
 
-    <!-- SUBMISSION CONFIRMATION MODAL -->
-    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50 hidden no-print">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-3.5 sm:p-5 shadow-2xl space-y-3 text-center relative">
+    <div class="sheet-footer">
+      <div class="footer-btns">
+        <button class="btn" style="background:var(--accent);color:#fff;" onclick="printReceipt()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          <span>Print</span>
+        </button>
+        <button class="btn btn-primary" onclick="downloadPDF()">Save PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-            <!-- Close Button Top Right -->
-            <button type="button" onclick="closeModal()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 font-bold text-base px-1.5 py-0.5 z-10">✕</button>
-
-            <div id="modal-step-review" class="space-y-3 pt-1">
-                <h3 class="text-sm sm:text-base font-bold text-gray-900 border-b pb-2">Confirm Transaction Submission</h3>
-
-                <div class="space-y-1.5 text-[11px] sm:text-xs text-gray-700 bg-red-50/50 p-2.5 rounded-lg border border-red-100 text-left">
-                    <div><span class="font-semibold">Exchange ID to Assign:</span> <span id="modal-exchange-id" class="font-bold text-red-600"></span></div>
-                    <div><span class="font-semibold">Name:</span> <span id="modal-cust-name-display"></span></div>
-                    <div><span class="font-semibold">Mobile:</span> <span id="modal-cust-phone-display"></span></div>
-
-                    <div id="modal-al-block" class="border-t border-red-100 pt-1 space-y-0.5">
-                        <div class="flex justify-between"><span>Aluminum Gross:</span> <span id="modal-al-gross" class="font-semibold"></span></div>
-                        <div class="flex justify-between"><span>Handles Deduction:</span> <span id="modal-al-handles" class="font-semibold"></span></div>
-                        <div class="flex justify-between"><span>Aluminum Amount:</span> <span id="modal-al-cost" class="font-semibold"></span></div>
-                    </div>
-
-                    <div id="modal-st-block" class="border-t border-red-100 pt-1 space-y-0.5">
-                        <div class="flex justify-between"><span>Steel Gross:</span> <span id="modal-st-gross" class="font-semibold"></span></div>
-                        <div class="flex justify-between"><span>Handles Deduction:</span> <span id="modal-st-handles" class="font-semibold"></span></div>
-                        <div class="flex justify-between"><span>Steel Amount:</span> <span id="modal-st-cost" class="font-semibold"></span></div>
-                    </div>
-
-                    <div class="border-t border-red-200 pt-1.5 flex justify-between text-xs sm:text-sm font-bold text-red-700">
-                        <span>Grand Total Payout:</span> <span id="modal-grand-total"></span>
-                    </div>
-                </div>
-
-                <div class="flex space-x-2.5 pt-1">
-                    <button type="button" onclick="closeModal()" class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-xs active:scale-95">Cancel</button>
-                    <button type="button" onclick="processSubmitOrder()" id="btn-process-submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow active:scale-95">
-                        <span>Submit Exchange</span>
-                    </button>
-                </div>
-            </div>
-
-            <div id="modal-step-print" class="hidden space-y-3 pt-1">
-                <div id="modal-status-icon" class="w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                </div>
-                <div>
-                    <h3 id="modal-print-title" class="text-sm sm:text-base font-bold text-gray-900">Estimation Ready</h3>
-                    <p id="modal-print-subtitle" class="text-[11px] font-semibold text-gray-500 mt-0.5">Click below to submit estimation to Google Sheets:</p>
-                </div>
-
-                <div class="bg-amber-50/60 p-2.5 rounded-xl border border-amber-200 text-left text-[11px] space-y-1 text-gray-700">
-                    <div class="flex justify-between">
-                        <span id="popup-id-label">Estimation ID:</span>
-                        <span id="popup-est-id" class="font-bold text-amber-700">Est1</span>
-                    </div>
-
-                    <div id="popup-al-block" class="space-y-0.5 pt-1 border-t border-amber-100">
-                        <div class="flex justify-between"><span>Aluminum Gross:</span> <span id="popup-al-gross" class="font-bold text-gray-900"></span></div>
-                        <div class="flex justify-between"><span>Handles Deduction:</span> <span id="popup-al-handles" class="font-bold text-gray-900"></span></div>
-                        <div class="flex justify-between"><span>Aluminum Amount:</span> <span id="popup-al-amount" class="font-bold text-gray-900"></span></div>
-                    </div>
-
-                    <div id="popup-st-block" class="space-y-0.5 pt-1 border-t border-amber-100">
-                        <div class="flex justify-between"><span>Steel Gross:</span> <span id="popup-st-gross" class="font-bold text-gray-900"></span></div>
-                        <div class="flex justify-between"><span>Handles Deduction:</span> <span id="popup-st-handles" class="font-bold text-gray-900"></span></div>
-                        <div class="flex justify-between"><span>Steel Amount:</span> <span id="popup-st-amount" class="font-bold text-gray-900"></span></div>
-                    </div>
-
-                    <div class="border-t border-amber-200 pt-1 flex justify-between font-bold text-xs text-red-700">
-                        <span>Grand Total:</span>
-                        <span id="popup-grand-total">₹0.00</span>
-                    </div>
-                </div>
-
-                <button type="button" onclick="processSubmitEstimation()" id="btn-submit-est" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow transition flex items-center justify-center space-x-1.5 active:scale-95">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                    <span>Submit Estimation</span>
-                </button>
-
-                <div id="print-options-container" class="space-y-2.5 pt-0.5">
-                    <div class="flex items-center space-x-2.5">
-                        <button type="button" onclick="triggerReceiptPrint('a4')" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full font-bold text-xs flex items-center justify-center space-x-1.5 shadow transition active:scale-95">
-                            <span>Print A4</span>
-                        </button>
-                        <button type="button" onclick="triggerReceiptPrint('thermal')" class="flex-1 py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-[11px] flex items-center justify-center space-x-1 shadow transition active:scale-95">
-                            <span>Print Thermal (80mm)</span>
-                        </button>
-                    </div>
-                </div>
-
-                <button type="button" onclick="resetForm()" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow transition mt-0.5 active:scale-95">Submit Another Form</button>
-            </div>
-        </div>
+<!-- Settings Modal (Manage %) -->
+<div id="settings-modal" class="overlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+        <span>Manage Discount %</span>
+      </h3>
+      <button class="sheet-close" onclick="toggleSettingsModal()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
 
-    <!-- PRINT-ONLY RECEIPT LAYOUT -->
-    <div class="print-only max-w-xl mx-auto p-2.5 border-2 border-red-700 rounded-lg receipt-container">
-        <img src="./4L.png" alt="Watermark Logo" class="watermark-img">
-        <div class="relative z-10">
-            <div id="print-duplicate-badge" class="hidden text-center mb-1 bg-red-100 text-red-700 font-extrabold text-[10px] tracking-widest border border-red-300 py-0.5 rounded uppercase">*** ESTIMATE RECEIPT - NOT SUBMITTED ***</div>
-
-            <div class="flex items-center justify-between border-b-2 border-red-600 pb-1.5 mb-1.5 thermal-border-bottom">
-                <div>
-                    <h1 id="receipt-header-title" class="text-base font-bold uppercase tracking-wide text-red-700 thermal-text-lg">Exchange Material Receipt</h1>
-                    <p class="text-[10px] text-gray-500 thermal-text-sm" id="print-date"></p>
-                </div>
-                <div class="text-right">
-                    <span class="text-[10px] text-gray-500 block uppercase font-bold thermal-text-sm" id="print-id-label">Exchange ID</span>
-                    <span id="print-exchange-id" class="text-sm font-mono font-bold text-red-700 thermal-text-lg"></span>
-                </div>
-            </div>
-
-            <div class="bg-red-50/60 p-1.5 rounded border border-red-100 mb-2 text-[11px] thermal-text-sm thermal-border-bottom grid grid-cols-2 gap-1.5">
-                <div><span class="font-bold text-gray-700 thermal-bold">Name:</span> <span id="print-cust-name" class="font-semibold"></span></div>
-                <div><span class="font-bold text-gray-700 thermal-bold">Mobile:</span> <span id="print-cust-phone" class="font-semibold"></span></div>
-            </div>
-
-            <div id="print-materials-grid" class="grid grid-cols-2 gap-3 text-[11px] thermal-stack thermal-text-sm">
-                <div id="print-al-section" class="border-r pr-2.5 thermal-hide-col-border thermal-border-bottom">
-                    <h2 class="font-bold text-[11px] border-b pb-1 mb-1 text-red-700 thermal-text-lg">Aluminum (₹<span id="print-al-rate-label">150.00</span> / kg)</h2>
-                    <div class="space-y-0.5 mb-1.5" id="print-al-items"></div>
-                    <div class="border-t pt-1 space-y-0.5">
-                        <div class="flex justify-between"><span>Gross Weight:</span><span id="print-al-gross">0.00 kg</span></div>
-                        <div class="flex justify-between"><span>Handles (<span id="print-al-hc">0</span>):</span><span id="print-al-hd">-0.00 kg</span></div>
-                        <div class="flex justify-between font-bold pt-0.5 border-t thermal-bold"><span>Net Weight:</span><span id="print-al-net">0.00 kg</span></div>
-                        <div class="flex justify-between font-bold text-[11px] text-black pt-0.5 thermal-bold"><span>Amount:</span><span id="print-al-cost">₹0.00</span></div>
-                    </div>
-                </div>
-
-                <div id="print-st-section" class="thermal-border-bottom">
-                    <h2 class="font-bold text-[11px] border-b pb-1 mb-1 text-gray-800 thermal-text-lg">Steel (₹<span id="print-st-rate-label">50.00</span> / kg)</h2>
-                    <div class="space-y-0.5 mb-1.5" id="print-st-items"></div>
-                    <div class="border-t pt-1 space-y-0.5">
-                        <div class="flex justify-between"><span>Gross Weight:</span><span id="print-st-gross">0.00 kg</span></div>
-                        <div class="flex justify-between"><span>Handles (<span id="print-st-hc">0</span>):</span><span id="print-st-hd">-0.00 kg</span></div>
-                        <div class="flex justify-between font-bold pt-0.5 border-t thermal-bold"><span>Net Weight:</span><span id="print-st-net">0.00 kg</span></div>
-                        <div class="flex justify-between font-bold text-[11px] text-black pt-0.5 thermal-bold"><span>Amount:</span><span id="print-st-cost">₹0.00</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="border-t-2 border-red-700 mt-2.5 pt-1.5 flex justify-between items-center thermal-border-bottom">
-                <div>
-                    <span class="text-[10px] font-bold uppercase block text-gray-700 thermal-text-sm">Grand Total Exchange Payout:</span>
-                    <span id="print-grand-total" class="text-lg font-extrabold text-red-700 thermal-text-lg">₹0.00</span>
-                </div>
-                <div class="text-right">
-                    <svg id="payout-barcode"></svg>
-                </div>
-            </div>
-        </div>
+    <div class="settings-add-row">
+      <input type="number" inputmode="numeric" id="new-pct-input" placeholder="e.g. 15 or 30" min="1" max="100" enterkeyhint="done">
+      <button onclick="addNewPercentage()">Add %</button>
     </div>
 
-    <!-- App Logic -->
-    <script>
-        const scriptUrl = "https://script.google.com/macros/s/AKfycby_cn4b6S1RgLakDA5wUA7kch6E0QVBLfmZc6zSFx2kPRVqf6cDlHrH8meIqjDDAt-j/exec";
-        const appShareUrl = "https://lalithanaturals.github.io/scrap-calc/";
-        const DEFAULT_RATES = { al: 150.00, st: 50.00 };
-        const DEFAULT_HANDLE_KG = 0.10;
-        const SETTINGS_STORAGE_KEY = 'scrapCalcSettings';
-        // rates.al / rates.st (₹ per kg) and handleDeductionKg (kg deducted per handle) are
-        // all user-editable via the Settings modal and persisted in localStorage — they no
-        // longer need to match the Google Sheet in any way, since only the computed
-        // gross/net/amount numbers are ever sent there.
-        const rates = { al: DEFAULT_RATES.al, st: DEFAULT_RATES.st };
-        let handleDeductionKg = DEFAULT_HANDLE_KG;
-        let activeTab = 'al';
-        let currentExchangeId = 'LNex1';
-        let currentEstId = 'Est1';
-        let convertingRowIndex = null;
-        let searchResultsStore = [];
-        let displayLimit = 4;
-        let isEstimationMode = false;
-        let isAppLoaded = false;
-        let searchDebounceTimer = null;
-        let calculateRafId = null;
-
-        let data = {
-            al: { weights: [0, 0], handles: 0 },
-            st: { weights: [0, 0], handles: 0 }
-        };
-
-        function unlockAppInputs() {
-            isAppLoaded = true;
-            const loader = document.getElementById('page-loader');
-            if (loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => { loader.style.display = 'none'; }, 200);
-            }
-
-            const searchModalBtn = document.getElementById('btn-search-modal');
-            searchModalBtn.disabled = false;
-            searchModalBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-
-            const nameInput = document.getElementById('cust-name');
-            nameInput.disabled = false;
-            nameInput.placeholder = "Optional name";
-            nameInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
-            nameInput.classList.add('bg-white');
-
-            const phoneInput = document.getElementById('cust-phone');
-            phoneInput.disabled = false;
-            phoneInput.placeholder = "Optional mobile";
-            phoneInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
-            phoneInput.classList.add('bg-white');
-
-            const addItemBtn = document.getElementById('btn-add-item');
-            addItemBtn.disabled = false;
-            addItemBtn.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
-            addItemBtn.classList.add('bg-red-50', 'text-red-600');
-
-            const handleMinus = document.getElementById('btn-handle-minus');
-            handleMinus.disabled = false;
-            handleMinus.classList.remove('bg-gray-100', 'text-gray-300', 'cursor-not-allowed');
-            handleMinus.classList.add('bg-white', 'text-gray-700');
-
-            const handlePlus = document.getElementById('btn-handle-plus');
-            handlePlus.disabled = false;
-            handlePlus.classList.remove('bg-gray-100', 'text-gray-300', 'cursor-not-allowed');
-            handlePlus.classList.add('bg-white', 'text-gray-700');
-
-            const btnRefresh = document.getElementById('btn-refresh');
-            btnRefresh.disabled = false;
-            btnRefresh.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
-            btnRefresh.classList.add('bg-gray-100', 'text-gray-700');
-
-            const btnEstimation = document.getElementById('btn-estimation');
-            btnEstimation.disabled = false;
-            btnEstimation.classList.remove('bg-gray-200', 'text-gray-400', 'cursor-not-allowed');
-            btnEstimation.classList.add('bg-amber-600', 'hover:bg-amber-700', 'text-white');
-
-            const btnSubmit = document.getElementById('btn-submit');
-            btnSubmit.disabled = false;
-            btnSubmit.classList.remove('bg-gray-200', 'text-gray-400', 'cursor-not-allowed');
-            btnSubmit.classList.add('bg-red-600', 'hover:bg-red-700', 'text-white');
-
-            render();
-            nameInput.focus();
-        }
-
-        function validatePhoneInput(input) {
-            input.value = input.value.replace(/\D/g, '');
-        }
-
-        function handleNameKeydown(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                const phoneInput = document.getElementById('cust-phone');
-                if (phoneInput) { phoneInput.focus(); phoneInput.select(); }
-            }
-        }
-
-        function handlePhoneKeydown(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                const inputs = Array.from(document.querySelectorAll('.item-input'));
-                if (inputs.length > 0) { inputs[0].focus(); inputs[0].select(); }
-            }
-        }
-
-        async function fetchNextIds() {
-            if (!scriptUrl) { unlockAppInputs(); return; }
-            const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 4000));
-            const fetchPromise = (async () => {
-                const response = await fetch(scriptUrl);
-                const resData = await response.json();
-                if (resData) {
-                    if (resData.nextId) {
-                        currentExchangeId = resData.nextId;
-                        document.getElementById('app-exchange-id').innerText = currentExchangeId;
-                    }
-                    if (resData.nextEstId) { currentEstId = resData.nextEstId; }
-                }
-            })();
-            try { await Promise.race([fetchPromise, timeoutPromise]); } catch (err) { console.error(err); }
-            unlockAppInputs();
-        }
-
-        function onSearchInput() {
-            clearTimeout(searchDebounceTimer);
-            const query = document.getElementById('search-input').value.trim();
-            if (query === '') {
-                // Empty box: fall back to the "last 4 records" view instead of an
-                // empty prompt, same as what's shown right when the modal opens.
-                loadRecentEntries();
-                return;
-            }
-            document.getElementById('search-results-container').innerHTML = '<div class="text-center text-xs text-gray-400 py-5">Searching...</div>';
-            searchDebounceTimer = setTimeout(async () => {
-                try {
-                    const response = await fetch(`${scriptUrl}?action=search&query=${encodeURIComponent(query)}`);
-                    const records = await response.json();
-                    searchResultsStore = Array.isArray(records) ? records : [];
-                    displayLimit = 4;
-                    renderSearchResults();
-                } catch (err) {
-                    document.getElementById('search-results-container').innerHTML = '<div class="text-center text-xs text-red-500 py-5">Connection error loading records.</div>';
-                }
-            }, 300);
-        }
-
-        // Most-recent-first ordering for records that don't come back from a typed query.
-        // Prefers the sheet row index (higher row = added later) when the API supplies one;
-        // otherwise assumes the API returns rows oldest-first (typical for an appended
-        // sheet) and just reverses that order.
-        function sortRecordsByRecency(records) {
-            const hasRowIndex = records.some(r => r && r.rowIndex !== undefined && r.rowIndex !== null && r.rowIndex !== '');
-            if (hasRowIndex) {
-                return records.slice().sort((a, b) => {
-                    const ai = parseInt(a.rowIndex, 10);
-                    const bi = parseInt(b.rowIndex, 10);
-                    const aiSafe = isNaN(ai) ? -Infinity : ai;
-                    const biSafe = isNaN(bi) ? -Infinity : bi;
-                    return biSafe - aiSafe;
-                });
-            }
-            return records.slice().reverse();
-        }
-
-        // Loads the most recent records and shows the last 4, newest first — used both
-        // when the search modal first opens and whenever the search box is cleared.
-        async function loadRecentEntries() {
-            const container = document.getElementById('search-results-container');
-            if (!scriptUrl) {
-                container.innerHTML = '<div class="text-center text-xs text-gray-400 py-5">Type to search records...</div>';
-                searchResultsStore = [];
-                return;
-            }
-            container.innerHTML = '<div class="text-center text-xs text-gray-400 py-5">Loading recent records...</div>';
-            try {
-                const response = await fetch(`${scriptUrl}?action=search&query=`);
-                const records = await response.json();
-                const all = Array.isArray(records) ? records : [];
-                searchResultsStore = sortRecordsByRecency(all);
-                displayLimit = 4;
-                renderSearchResults();
-            } catch (err) {
-                container.innerHTML = '<div class="text-center text-xs text-red-500 py-5">Connection error loading records.</div>';
-            }
-        }
-
-        function renderSearchResults() {
-            const container = document.getElementById('search-results-container');
-            const query = document.getElementById('search-input').value.trim().toLowerCase().replace(/\s+/g, '');
-            let filteredRecords = searchResultsStore;
-            if (query !== '') {
-                filteredRecords = searchResultsStore.filter(r => {
-                    const rowString = Object.values(r).join('').toLowerCase().replace(/\s+/g, '');
-                    return rowString.includes(query);
-                });
-            }
-            if (filteredRecords.length === 0) {
-                container.innerHTML = `<div class="text-center text-xs text-gray-400 py-5">No matching records found</div>`;
-                return;
-            }
-            const visibleResults = filteredRecords.slice(0, displayLimit);
-            const hasMore = filteredRecords.length > displayLimit;
-
-            let html = visibleResults.map((r) => {
-                const recordId = r.estId || r.exchangeId || 'N/A';
-                const isEstRecord = (r.estId && r.estId.toString().trim() !== "") || (r.type === 'ESTIMATE') || String(recordId).startsWith('Est');
-                const isConverted = r.exchangeId && r.exchangeId.toString().trim() !== "";
-                const alGrossVal = parseFloat(r.alGross || 0);
-                const stGrossVal = parseFloat(r.stGross || 0);
-                const alNetVal = parseFloat(r.alNet !== undefined && !isNaN(r.alNet) ? r.alNet : alGrossVal);
-                const stNetVal = parseFloat(r.stNet !== undefined && !isNaN(r.stNet) ? r.stNet : stGrossVal);
-                const alAmtVal = parseFloat(r.alAmount !== undefined && !isNaN(r.alAmount) ? r.alAmount : (alNetVal * rates.al));
-                const stAmtVal = parseFloat(r.stAmount !== undefined && !isNaN(r.stAmount) ? r.stAmount : (stNetVal * rates.st));
-                let totalVal = parseFloat(r.grandTotal || 0);
-                if (!totalVal || totalVal === 0 || isNaN(totalVal)) { totalVal = alAmtVal + stAmtVal; }
-                const custName = r.customerName && r.customerName.trim() !== '' ? r.customerName : 'Walk-in Customer';
-                const custPhone = r.customerPhone && r.customerPhone.trim() !== '' ? r.customerPhone : 'N/A';
-                const timestamp = r.timestamp || 'N/A';
-                const originalIndex = searchResultsStore.indexOf(r);
-
-                return `
-                <div class="${isEstRecord && !isConverted ? 'bg-amber-50/60 border-amber-200' : 'bg-red-50/50 border-red-100'} p-3 rounded-lg border text-xs space-y-1.5">
-                    <div class="flex justify-between font-bold ${isEstRecord && !isConverted ? 'text-amber-700' : 'text-red-700'} text-xs sm:text-sm">
-                        <span>${recordId} ${isEstRecord ? (isConverted ? '(ESTIMATE - SUBMITTED)' : '(ESTIMATE)') : '(EXCHANGE)'}</span>
-                        <span>₹${totalVal.toFixed(2)}</span>
-                    </div>
-                    <div class="text-gray-700"><span class="font-semibold">Name:</span> ${custName} (${custPhone})</div>
-                    <div class="text-gray-500 text-[10px]"><span class="font-semibold">Date:</span> ${timestamp}</div>
-                    <div class="border-t ${isEstRecord && !isConverted ? 'border-amber-200' : 'border-red-100'} pt-1 flex justify-between text-gray-600 text-[11px]">
-                        <span>AL Net: ${alNetVal.toFixed(2)} kg (₹${alAmtVal.toFixed(2)})</span>
-                        <span>Steel Net: ${stNetVal.toFixed(2)} kg (₹${stAmtVal.toFixed(2)})</span>
-                    </div>
-                    <div class="pt-1 flex justify-end space-x-1.5">
-                        ${isEstRecord && !isConverted ? `
-                            <button type="button" onclick="submitOrderFromEstimate(${originalIndex})" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-2 py-1 rounded-md text-[11px] shadow inline-flex items-center space-x-1 active:scale-95">
-                                <span>Submit Order</span>
-                            </button>
-                        ` : ''}
-                        <button type="button" onclick="printSearchResult(${originalIndex}, 'a4')" class="bg-red-600 hover:bg-red-700 text-white font-bold px-2 py-1 rounded-md text-[11px] shadow inline-flex items-center space-x-1 active:scale-95">
-                            <span>A4 Print</span>
-                        </button>
-                        <button type="button" onclick="printSearchResult(${originalIndex}, 'thermal')" class="bg-gray-800 hover:bg-black text-white font-bold px-2 py-1 rounded-md text-[11px] shadow inline-flex items-center space-x-1 active:scale-95">
-                            <span>Thermal Print</span>
-                        </button>
-                    </div>
-                </div>`;
-            }).join('');
-
-            if (hasMore) {
-                html += `
-                    <div class="text-center pt-1.5 pb-1">
-                        <button type="button" onclick="loadMoreResults()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded-lg text-xs border border-gray-300 shadow-sm transition active:scale-95">
-                            Load More (${filteredRecords.length - displayLimit} remaining)
-                        </button>
-                    </div>`;
-            }
-            container.innerHTML = html;
-        }
-
-        function loadMoreResults() { displayLimit += 4; renderSearchResults(); }
-
-        function submitOrderFromEstimate(index) {
-            const r = searchResultsStore[index];
-            if (!r) return;
-            convertingRowIndex = r.rowIndex;
-            populateFormFromRecord(r);
-            closeSearchModal();
-            handleSubmitOrder();
-        }
-
-        function populateFormFromRecord(r) {
-            document.getElementById('cust-name').value = r.customerName || '';
-            document.getElementById('cust-phone').value = r.customerPhone || '';
-            const alNet = parseFloat(r.alNet || r.alGross || 0);
-            const stNet = parseFloat(r.stNet || r.stGross || 0);
-            data.al.weights = alNet > 0 ? [alNet] : [0, 0];
-            data.al.handles = 0;
-            data.st.weights = stNet > 0 ? [stNet] : [0, 0];
-            data.st.handles = 0;
-            render();
-        }
-
-        function setPrintMode(mode) {
-            document.body.classList.remove('print-mode-a4', 'print-mode-thermal');
-            if (mode === 'thermal') {
-                document.body.classList.add('print-mode-thermal');
-            } else {
-                document.body.classList.add('print-mode-a4');
-            }
-        }
-
-        function printSearchResult(index, mode) {
-            const r = searchResultsStore[index];
-            if (!r) return;
-            setPrintMode(mode);
-
-            const recordId = r.estId || r.exchangeId || 'N/A';
-            const isEstRecord = (r.estId && r.estId.toString().trim() !== "") || (r.type === 'ESTIMATE') || String(recordId).startsWith('Est');
-            isEstimationMode = isEstRecord;
-
-            const duplicateBadge = document.getElementById('print-duplicate-badge');
-            if (isEstRecord) {
-                duplicateBadge.innerText = "*** ESTIMATE RECEIPT - NOT SUBMITTED ***";
-                document.getElementById('receipt-header-title').innerText = "Material Estimation Receipt";
-                document.getElementById('print-id-label').innerText = "Estimation ID";
-            } else {
-                duplicateBadge.innerText = "*** DUPLICATE COPY ***";
-                document.getElementById('receipt-header-title').innerText = "Exchange Material Receipt";
-                document.getElementById('print-id-label').innerText = "Exchange ID";
-            }
-            duplicateBadge.classList.remove('hidden');
-
-            document.getElementById('print-exchange-id').innerText = recordId;
-            document.getElementById('print-cust-name').innerText = (r.customerName && r.customerName.trim() !== '') ? r.customerName : 'Walk-in Customer';
-            document.getElementById('print-cust-phone').innerText = (r.customerPhone && r.customerPhone.trim() !== '') ? r.customerPhone : 'N/A';
-            document.getElementById('print-date').innerText = "Date: " + (r.timestamp || '');
-
-            const alGross = parseFloat(r.alGross || 0);
-            const alNet = parseFloat(r.alNet !== undefined && !isNaN(r.alNet) ? r.alNet : alGross);
-            const alAmt = parseFloat(r.alAmount !== undefined && !isNaN(r.alAmount) ? r.alAmount : (alNet * rates.al));
-            const stGross = parseFloat(r.stGross || 0);
-            const stNet = parseFloat(r.stNet !== undefined && !isNaN(r.stNet) ? r.stNet : stGross);
-            const stAmt = parseFloat(r.stAmount !== undefined && !isNaN(r.stAmount) ? r.stAmount : (stNet * rates.st));
-
-            const alSection = document.getElementById('print-al-section');
-            const stSection = document.getElementById('print-st-section');
-            const materialsGrid = document.getElementById('print-materials-grid');
-
-            if (alGross > 0 || alNet > 0 || alAmt > 0) {
-                alSection.style.display = 'block';
-                const nonZeroAlWeights = [alNet].filter(w => w > 0);
-                document.getElementById('print-al-items').innerHTML = nonZeroAlWeights.length > 0
-                    ? nonZeroAlWeights.map((w, i) => `<div class="flex justify-between"><span>Item ${i+1}:</span><span>${w.toFixed(2)} kg</span></div>`).join('')
-                    : `<div class="flex justify-between text-gray-400 italic"><span>Aluminum items</span></div>`;
-
-                document.getElementById('print-al-gross').innerText = `${(alGross > 0 ? alGross : alNet).toFixed(2)} kg`;
-                document.getElementById('print-al-hc').innerText = "0";
-                document.getElementById('print-al-hd').innerText = "-0.00 kg";
-                document.getElementById('print-al-net').innerText = `${alNet.toFixed(2)} kg`;
-                document.getElementById('print-al-cost').innerText = `₹${alAmt.toFixed(2)}`;
-            } else {
-                alSection.style.display = 'none';
-            }
-
-            if (stGross > 0 || stNet > 0 || stAmt > 0) {
-                stSection.style.display = 'block';
-                const nonZeroStWeights = [stNet].filter(w => w > 0);
-                document.getElementById('print-st-items').innerHTML = nonZeroStWeights.length > 0
-                    ? nonZeroStWeights.map((w, i) => `<div class="flex justify-between"><span>Item ${i+1}:</span><span>${w.toFixed(2)} kg</span></div>`).join('')
-                    : `<div class="flex justify-between text-gray-400 italic"><span>Steel items</span></div>`;
-
-                document.getElementById('print-st-gross').innerText = `${(stGross > 0 ? stGross : stNet).toFixed(2)} kg`;
-                document.getElementById('print-st-hc').innerText = "0";
-                document.getElementById('print-st-hd').innerText = "-0.00 kg";
-                document.getElementById('print-st-net').innerText = `${stNet.toFixed(2)} kg`;
-                document.getElementById('print-st-cost').innerText = `₹${stAmt.toFixed(2)}`;
-            } else {
-                stSection.style.display = 'none';
-            }
-
-            const hasAl = (alGross > 0 || alNet > 0 || alAmt > 0);
-            const hasSt = (stGross > 0 || stNet > 0 || stAmt > 0);
-
-            if (hasAl && hasSt) {
-                materialsGrid.className = "grid grid-cols-2 gap-3 text-[11px] thermal-stack thermal-text-sm";
-                alSection.className = "border-r pr-2.5 thermal-hide-col-border thermal-border-bottom";
-            } else {
-                materialsGrid.className = "grid grid-cols-1 gap-3 text-[11px] thermal-stack thermal-text-sm";
-                alSection.className = "thermal-border-bottom";
-                stSection.className = "thermal-border-bottom";
-            }
-
-            let grandTotal = parseFloat(r.grandTotal || 0);
-            if (!grandTotal || grandTotal === 0 || isNaN(grandTotal)) { grandTotal = alAmt + stAmt; }
-            document.getElementById('print-grand-total').innerText = `₹${grandTotal.toFixed(2)}`;
-
-            renderSimpleBarcode(grandTotal);
-            setTimeout(() => { window.print(); }, 300);
-        }
-
-        function renderSimpleBarcode(val) {
-            const barcodeElement = document.getElementById("payout-barcode");
-            if (isEstimationMode) {
-                barcodeElement.style.display = 'none';
-                return;
-            }
-            barcodeElement.style.display = 'block';
-            try {
-                const formattedVal = Math.round(val).toString();
-                const isThermal = document.body.classList.contains('print-mode-thermal');
-                JsBarcode("#payout-barcode", formattedVal, {
-                    format: "CODE128",
-                    width: isThermal ? 1.4 : 1.5,
-                    height: isThermal ? 28 : 30,
-                    displayValue: true,
-                    fontSize: isThermal ? 9 : 10,
-                    margin: 0
-                });
-            } catch (e) { console.error(e); }
-        }
-
-        function openSearchModal() {
-            document.getElementById('search-modal').classList.remove('hidden');
-            setTimeout(() => {
-                const searchInput = document.getElementById('search-input');
-                searchInput.focus();
-                searchInput.value = '';
-            }, 100);
-            // Show the last 4 records (newest first) immediately, before the user types.
-            loadRecentEntries();
-        }
-
-        function closeSearchModal() {
-            document.getElementById('search-modal').classList.add('hidden');
-            document.getElementById('search-input').value = '';
-            document.getElementById('search-results-container').innerHTML = '<div class="text-center text-xs text-gray-400 py-5">Type to search records instantly...</div>';
-            searchResultsStore = [];
-            setTimeout(() => {
-                const nameInput = document.getElementById('cust-name');
-                if (nameInput) { nameInput.focus(); }
-            }, 50);
-        }
-
-        function init() {
-            loadSettings();
-            updateRateLabels();
-            render();
-            fetchNextIds();
-        }
-
-        function switchTab(tab) {
-            activeTab = tab;
-            document.getElementById('tab-al').className = tab === 'al' ? "flex-1 py-2 font-semibold text-center border-b-2 border-red-600 text-red-600 text-xs sm:text-sm" : "flex-1 py-2 font-semibold text-center border-b-2 border-transparent text-gray-500 hover:text-red-600 text-xs sm:text-sm";
-            document.getElementById('tab-st').className = tab === 'st' ? "flex-1 py-2 font-semibold text-center border-b-2 border-red-600 text-red-600 text-xs sm:text-sm" : "flex-1 py-2 font-semibold text-center border-b-2 border-transparent text-gray-500 hover:text-red-600 text-xs sm:text-sm";
-            document.getElementById('item-label').innerText = tab === 'al' ? "Aluminum Item Weights (kg)" : "Steel Item Weights (kg)";
-            render();
-        }
-
-        function render() {
-            const container = document.getElementById('item-list');
-            container.innerHTML = '';
-            const isLocked = !isAppLoaded;
-
-            if (data[activeTab].weights.length === 0) {
-                container.innerHTML = '<div class="text-xs text-gray-400 italic py-2 text-center">No items added. Click "+ Add Item" above.</div>';
-            } else {
-                // Build all rows in a detached fragment, then attach once — cheaper than
-                // repeated appendChild calls that each force a layout/reflow.
-                const frag = document.createDocumentFragment();
-                data[activeTab].weights.forEach((w, idx) => {
-                    const div = document.createElement('div');
-                    div.className = "flex items-center space-x-2";
-                    div.innerHTML = `
-                        <span class="text-[11px] text-gray-400 font-medium w-11">Item ${idx + 1}</span>
-                        <input type="text" ${isLocked ? 'disabled' : ''} inputmode="decimal" pattern="[0-9]*" value="${w === 0 ? '' : w}" oninput="updateWeight(${idx}, this.value)" onkeydown="handleItemKeydown(event, ${idx})" placeholder="0.00" class="flex-1 border border-gray-200 rounded-lg p-2 text-xs text-gray-800 focus:ring-2 focus:ring-red-500 focus:outline-none ${isLocked ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'} item-input">
-                        <button type="button" ${isLocked ? 'disabled' : ''} onclick="removeItem(${idx})" class="text-red-400 hover:text-red-600 font-bold px-2 py-1.5">✕</button>
-                    `;
-                    frag.appendChild(div);
-                });
-                container.appendChild(frag);
-            }
-            document.getElementById('handle-count').innerText = data[activeTab].handles;
-            calculate();
-        }
-
-        function handleItemKeydown(event, currentIndex) {
-            if (event.key !== 'Enter') return;
-            event.preventDefault();
-            const inputs = Array.from(document.querySelectorAll('.item-input'));
-            const nextIndex = currentIndex + 1;
-            const isLastInput = currentIndex === inputs.length - 1;
-
-            if (nextIndex < inputs.length) {
-                // Another item input already exists after this one — jump straight to it.
-                inputs[nextIndex].focus();
-                inputs[nextIndex].select();
-            } else if (isLastInput) {
-                // We're on the last existing item.
-                if (inputs.length === 1) {
-                    // Only one item so far: add a second one to preserve the original
-                    // two-item quick-entry flow, then focus it.
-                    addItem();
-                    const updatedInputs = Array.from(document.querySelectorAll('.item-input'));
-                    if (updatedInputs.length > inputs.length) { updatedInputs[updatedInputs.length - 1].focus(); }
-                } else {
-                    // Two or more items already: Enter on the last one moves on to the
-                    // handle counter instead of piling on more items indefinitely.
-                    const handlePlusBtn = document.getElementById('btn-handle-plus');
-                    if (handlePlusBtn) { handlePlusBtn.focus(); }
-                }
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const handlePlus = document.getElementById('btn-handle-plus');
-            if (handlePlus) {
-                handlePlus.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter') { event.preventDefault(); updateHandles(1); }
-                });
-            }
-        });
-
-        function addItem() {
-            if (!isAppLoaded) return;
-            data[activeTab].weights.push(0);
-            render();
-            const inputs = document.querySelectorAll('#item-list input');
-            if (inputs.length > 0) { inputs[inputs.length - 1].focus(); }
-        }
-
-        function removeItem(idx) {
-            if (!isAppLoaded) return;
-            data[activeTab].weights.splice(idx, 1);
-            render();
-        }
-
-        function updateWeight(idx, val) {
-            if (!isAppLoaded) return;
-            const parsed = parseFloat(val);
-            // Guard against negative or invalid entries silently reducing the gross total.
-            data[activeTab].weights[idx] = (!isNaN(parsed) && parsed > 0) ? parsed : 0;
-            calculateDebounced();
-        }
-
-        function updateHandles(change) {
-            if (!isAppLoaded) return;
-            data[activeTab].handles = Math.max(0, data[activeTab].handles + change);
-            document.getElementById('handle-count').innerText = data[activeTab].handles;
-            calculateDebounced();
-        }
-
-        // Coalesce rapid-fire calls (fast typing, repeated handle taps) into a single
-        // calculate() per animation frame instead of running the full DOM update on
-        // every keystroke — this is most of the perceived "lag" during fast entry.
-        function calculateDebounced() {
-            if (calculateRafId !== null) return;
-            calculateRafId = requestAnimationFrame(() => {
-                calculateRafId = null;
-                calculate();
-            });
-        }
-
-        function computeMaterial(key) {
-            const gross = data[key].weights.reduce((a, b) => a + b, 0);
-            const hd = data[key].handles * handleDeductionKg;
-            const net = Math.max(0, gross - hd);
-            const cost = net * rates[key];
-            return { gross, hd, net, cost };
-        }
-
-        // ---- Price / handle-deduction settings (persisted per-device in localStorage) ----
-
-        function loadSettings() {
-            try {
-                const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
-                if (!raw) return;
-                const parsed = JSON.parse(raw);
-                if (typeof parsed.al === 'number' && parsed.al > 0) rates.al = parsed.al;
-                if (typeof parsed.st === 'number' && parsed.st > 0) rates.st = parsed.st;
-                if (typeof parsed.handleDeductionKg === 'number' && parsed.handleDeductionKg >= 0) handleDeductionKg = parsed.handleDeductionKg;
-            } catch (e) { console.error(e); }
-        }
-
-        function persistSettings() {
-            try {
-                localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({ al: rates.al, st: rates.st, handleDeductionKg }));
-            } catch (e) { console.error(e); }
-        }
-
-        function formatRateShort(v) {
-            return Number.isInteger(v) ? v.toString() : v.toFixed(2);
-        }
-
-        function updateRateLabels() {
-            document.getElementById('tab-al-rate').innerText = `₹${formatRateShort(rates.al)}`;
-            document.getElementById('tab-st-rate').innerText = `₹${formatRateShort(rates.st)}`;
-            document.getElementById('print-al-rate-label').innerText = rates.al.toFixed(2);
-            document.getElementById('print-st-rate-label').innerText = rates.st.toFixed(2);
-        }
-
-        function openSettingsModal() {
-            document.getElementById('setting-al-rate').value = rates.al;
-            document.getElementById('setting-st-rate').value = rates.st;
-            document.getElementById('setting-handle-kg').value = handleDeductionKg;
-            document.getElementById('settings-error').classList.add('hidden');
-            document.getElementById('settings-modal').classList.remove('hidden');
-        }
-
-        function closeSettingsModal() {
-            document.getElementById('settings-modal').classList.add('hidden');
-        }
-
-        function resetSettingsToDefault() {
-            document.getElementById('setting-al-rate').value = DEFAULT_RATES.al;
-            document.getElementById('setting-st-rate').value = DEFAULT_RATES.st;
-            document.getElementById('setting-handle-kg').value = DEFAULT_HANDLE_KG;
-            document.getElementById('settings-error').classList.add('hidden');
-        }
-
-        function saveSettings() {
-            const alVal = parseFloat(document.getElementById('setting-al-rate').value);
-            const stVal = parseFloat(document.getElementById('setting-st-rate').value);
-            const hdVal = parseFloat(document.getElementById('setting-handle-kg').value);
-            const errEl = document.getElementById('settings-error');
-
-            if (isNaN(alVal) || alVal <= 0 || isNaN(stVal) || stVal <= 0 || isNaN(hdVal) || hdVal < 0) {
-                errEl.innerText = "Enter valid rates (> 0) and a handle deduction of 0 or more.";
-                errEl.classList.remove('hidden');
-                return;
-            }
-
-            rates.al = alVal;
-            rates.st = stVal;
-            handleDeductionKg = hdVal;
-            persistSettings();
-            updateRateLabels();
-            calculate();
-            closeSettingsModal();
-        }
-
-        // ---- Share app link ----
-
-        async function shareApp() {
-            const shareData = { title: "Scrap Calculator", text: "Lalitha Naturals — Scrap Calculator", url: appShareUrl };
-            if (navigator.share) {
-                try { await navigator.share(shareData); } catch (e) { /* user cancelled — nothing to do */ }
-                return;
-            }
-            try {
-                await navigator.clipboard.writeText(appShareUrl);
-                showShareToast("Link copied to clipboard");
-            } catch (e) {
-                window.prompt("Copy this link to share:", appShareUrl);
-            }
-        }
-
-        function showShareToast(msg) {
-            const toast = document.getElementById('share-toast');
-            if (!toast) return;
-            toast.innerText = msg;
-            toast.classList.remove('hidden');
-            clearTimeout(showShareToast._timer);
-            showShareToast._timer = setTimeout(() => toast.classList.add('hidden'), 2000);
-        }
-
-        function calculate() {
-            const al = computeMaterial('al');
-            const st = computeMaterial('st');
-            const grandTotal = al.cost + st.cost;
-
-            document.getElementById('al-total-display').innerText = `₹${al.cost.toFixed(2)}`;
-            document.getElementById('st-total-display').innerText = `₹${st.cost.toFixed(2)}`;
-            document.getElementById('grand-total-display').innerText = `₹${grandTotal.toFixed(2)}`;
-            document.getElementById('print-date').innerText = "Date: " + new Date().toLocaleString();
-
-            const alSection = document.getElementById('print-al-section');
-            const stSection = document.getElementById('print-st-section');
-            const materialsGrid = document.getElementById('print-materials-grid');
-
-            if (al.gross > 0) {
-                alSection.style.display = 'block';
-                const validAlWeights = data.al.weights.map((w, i) => ({w, i})).filter(item => item.w > 0);
-                document.getElementById('print-al-items').innerHTML = validAlWeights.length > 0
-                    ? validAlWeights.map(item => `<div class="flex justify-between"><span>Item ${item.i + 1}:</span><span>${item.w.toFixed(2)} kg</span></div>`).join('')
-                    : `<div class="flex justify-between text-gray-400 italic"><span>No Aluminum items</span></div>`;
-
-                document.getElementById('print-al-gross').innerText = `${al.gross.toFixed(2)} kg`;
-                document.getElementById('print-al-hc').innerText = data.al.handles;
-                document.getElementById('print-al-hd').innerText = `-${al.hd.toFixed(2)} kg`;
-                document.getElementById('print-al-net').innerText = `${al.net.toFixed(2)} kg`;
-                document.getElementById('print-al-cost').innerText = `₹${al.cost.toFixed(2)}`;
-            } else {
-                alSection.style.display = 'none';
-            }
-
-            if (st.gross > 0) {
-                stSection.style.display = 'block';
-                const validStWeights = data.st.weights.map((w, i) => ({w, i})).filter(item => item.w > 0);
-                document.getElementById('print-st-items').innerHTML = validStWeights.length > 0
-                    ? validStWeights.map(item => `<div class="flex justify-between"><span>Item ${item.i + 1}:</span><span>${item.w.toFixed(2)} kg</span></div>`).join('')
-                    : `<div class="flex justify-between text-gray-400 italic"><span>No Steel items</span></div>`;
-
-                document.getElementById('print-st-gross').innerText = `${st.gross.toFixed(2)} kg`;
-                document.getElementById('print-st-hc').innerText = data.st.handles;
-                document.getElementById('print-st-hd').innerText = `-${st.hd.toFixed(2)} kg`;
-                document.getElementById('print-st-net').innerText = `${st.net.toFixed(2)} kg`;
-                document.getElementById('print-st-cost').innerText = `₹${st.cost.toFixed(2)}`;
-            } else {
-                stSection.style.display = 'none';
-            }
-
-            if (al.gross > 0 && st.gross > 0) {
-                materialsGrid.className = "grid grid-cols-2 gap-3 text-[11px] thermal-stack thermal-text-sm";
-                alSection.className = "border-r pr-2.5 thermal-hide-col-border thermal-border-bottom";
-            } else {
-                materialsGrid.className = "grid grid-cols-1 gap-3 text-[11px] thermal-stack thermal-text-sm";
-                alSection.className = "thermal-border-bottom";
-                stSection.className = "thermal-border-bottom";
-            }
-
-            document.getElementById('print-grand-total').innerText = `₹${grandTotal.toFixed(2)}`;
-
-            document.getElementById('popup-id-label').innerText = isEstimationMode ? "Estimation ID:" : "Exchange ID:";
-            document.getElementById('popup-est-id').innerText = isEstimationMode ? currentEstId : currentExchangeId;
-
-            const modalAlBlock = document.getElementById('modal-al-block');
-            const modalStBlock = document.getElementById('modal-st-block');
-            if (al.gross > 0) {
-                modalAlBlock.style.display = 'block';
-                document.getElementById('modal-al-gross').innerText = `${al.gross.toFixed(2)} kg`;
-                document.getElementById('modal-al-handles').innerText = `${data.al.handles} hdl (-${al.hd.toFixed(2)} kg) = ${al.net.toFixed(2)} kg net`;
-                document.getElementById('modal-al-cost').innerText = `₹${al.cost.toFixed(2)}`;
-            } else { modalAlBlock.style.display = 'none'; }
-
-            if (st.gross > 0) {
-                modalStBlock.style.display = 'block';
-                document.getElementById('modal-st-gross').innerText = `${st.gross.toFixed(2)} kg`;
-                // FIX: this used to read al.hd (the aluminum deduction) for the steel block.
-                document.getElementById('modal-st-handles').innerText = `${data.st.handles} hdl (-${st.hd.toFixed(2)} kg) = ${st.net.toFixed(2)} kg net`;
-                document.getElementById('modal-st-cost').innerText = `₹${st.cost.toFixed(2)}`;
-            } else { modalStBlock.style.display = 'none'; }
-
-            const popupAlBlock = document.getElementById('popup-al-block');
-            const popupStBlock = document.getElementById('popup-st-block');
-            if (al.gross > 0) {
-                popupAlBlock.style.display = 'block';
-                document.getElementById('popup-al-gross').innerText = `${al.gross.toFixed(2)} kg`;
-                document.getElementById('popup-al-handles').innerText = `${data.al.handles} hdl (-${al.hd.toFixed(2)} kg) = ${al.net.toFixed(2)} kg net`;
-                document.getElementById('popup-al-amount').innerText = `₹${al.cost.toFixed(2)}`;
-            } else { popupAlBlock.style.display = 'none'; }
-
-            if (st.gross > 0) {
-                popupStBlock.style.display = 'block';
-                document.getElementById('popup-st-gross').innerText = `${st.gross.toFixed(2)} kg`;
-                // FIX: same al.hd/st.hd mixup as the modal above.
-                document.getElementById('popup-st-handles').innerText = `${data.st.handles} hdl (-${st.hd.toFixed(2)} kg) = ${st.net.toFixed(2)} kg net`;
-                document.getElementById('popup-st-amount').innerText = `₹${st.cost.toFixed(2)}`;
-            } else { popupStBlock.style.display = 'none'; }
-
-            document.getElementById('popup-grand-total').innerText = `₹${grandTotal.toFixed(2)}`;
-            // Barcode intentionally NOT redrawn on every calculate() — it's only ever shown
-            // on the receipt at estimation/submit/print time, so re-rendering it on each
-            // keystroke was pure wasted work (JsBarcode rebuilds an SVG from scratch).
-        }
-
-        function handleGetEstimation() {
-            if (!isAppLoaded) return;
-            const al = computeMaterial('al');
-            const st = computeMaterial('st');
-
-            if (al.gross === 0 && st.gross === 0) {
-                alert("Error: Please enter at least one item weight before getting an estimation.");
-                return;
-            }
-
-            isEstimationMode = true;
-            convertingRowIndex = null;
-            const name = document.getElementById('cust-name').value.trim() || 'Walk-in Customer';
-            const phone = document.getElementById('cust-phone').value.trim() || 'N/A';
-
-            const duplicateBadge = document.getElementById('print-duplicate-badge');
-            duplicateBadge.innerText = "*** ESTIMATE RECEIPT - NOT SUBMITTED ***";
-            duplicateBadge.classList.remove('hidden');
-
-            document.getElementById('receipt-header-title').innerText = "Material Estimation Receipt";
-            document.getElementById('print-id-label').innerText = "Estimation ID";
-            document.getElementById('print-exchange-id').innerText = currentEstId;
-            document.getElementById('print-cust-name').innerText = name;
-            document.getElementById('print-cust-phone').innerText = phone;
-            calculate();
-            renderSimpleBarcode(al.cost + st.cost);
-
-            document.getElementById('modal-status-icon').className = "w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto";
-            document.getElementById('modal-print-title').innerText = "Estimation Ready";
-            document.getElementById('modal-print-subtitle').innerText = `Estimation ID: ${currentEstId}. Click below to submit to Google Sheets:`;
-
-            const btnSubmitEst = document.getElementById('btn-submit-est');
-            btnSubmitEst.classList.remove('hidden');
-            btnSubmitEst.disabled = false;
-            btnSubmitEst.className = "w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow transition flex items-center justify-center space-x-1.5";
-            btnSubmitEst.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg><span>Submit Estimation</span>`;
-
-            document.getElementById('print-options-container').classList.remove('hidden');
-            document.getElementById('modal-step-review').classList.add('hidden');
-            document.getElementById('modal-step-print').classList.remove('hidden');
-            document.getElementById('confirm-modal').classList.remove('hidden');
-        }
-
-        async function processSubmitEstimation() {
-            const name = document.getElementById('cust-name').value.trim() || 'Walk-in Customer';
-            const phone = document.getElementById('cust-phone').value.trim() || 'N/A';
-            const al = computeMaterial('al');
-            const st = computeMaterial('st');
-            const grandTotal = al.cost + st.cost;
-
-            const submitEstBtn = document.getElementById('btn-submit-est');
-            submitEstBtn.disabled = true;
-            submitEstBtn.innerText = "Submitting Estimation...";
-
-            if (scriptUrl) {
-                try {
-                    const formData = new URLSearchParams();
-                    formData.append('timestamp', new Date().toLocaleString());
-                    formData.append('estId', currentEstId);
-                    formData.append('customerName', name);
-                    formData.append('customerPhone', phone);
-                    formData.append('alGross', al.gross);
-                    formData.append('alNet', al.net);
-                    formData.append('alAmount', al.cost);
-                    formData.append('stGross', st.gross);
-                    formData.append('stNet', st.net);
-                    formData.append('stAmount', st.cost);
-                    formData.append('grandTotal', grandTotal);
-                    formData.append('type', 'ESTIMATE');
-
-                    await fetch(scriptUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: formData.toString()
-                    });
-                } catch (err) { console.error(err); }
-            }
-
-            submitEstBtn.innerText = "✓ Estimation Submitted Successfully";
-            submitEstBtn.className = "w-full py-2.5 bg-green-600 text-white rounded-xl font-bold text-xs shadow transition flex items-center justify-center space-x-1.5 mb-1.5";
-            submitEstBtn.disabled = true;
-
-            document.getElementById('modal-print-subtitle').innerText = `Estimation ID ${currentEstId} saved. Choose print format:`;
-            document.getElementById('print-options-container').classList.remove('hidden');
-            fetchNextIds();
-        }
-
-        function handleSubmitOrder() {
-            if (!isAppLoaded) return;
-            isEstimationMode = false;
-            const name = document.getElementById('cust-name').value.trim() || 'Walk-in Customer';
-            const phone = document.getElementById('cust-phone').value.trim() || 'N/A';
-
-            const al = computeMaterial('al');
-            const st = computeMaterial('st');
-
-            if (al.gross === 0 && st.gross === 0) {
-                alert("Error: Please enter at least one item weight before submitting an order.");
-                return;
-            }
-
-            document.getElementById('modal-exchange-id').innerText = currentExchangeId;
-            document.getElementById('modal-cust-name-display').innerText = name;
-            document.getElementById('modal-cust-phone-display').innerText = phone;
-            calculate();
-
-            document.getElementById('modal-grand-total').innerText = `₹${(al.cost + st.cost).toFixed(2)}`;
-            document.getElementById('modal-step-review').classList.remove('hidden');
-            document.getElementById('modal-step-print').classList.add('hidden');
-            document.getElementById('confirm-modal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('confirm-modal').classList.add('hidden');
-            convertingRowIndex = null;
-        }
-
-        async function processSubmitOrder() {
-            const name = document.getElementById('cust-name').value.trim() || 'Walk-in Customer';
-            const phone = document.getElementById('cust-phone').value.trim() || 'N/A';
-            const al = computeMaterial('al');
-            const st = computeMaterial('st');
-            const grandTotal = al.cost + st.cost;
-
-            document.getElementById('print-duplicate-badge').classList.add('hidden');
-            document.getElementById('receipt-header-title').innerText = "Exchange Material Receipt";
-            document.getElementById('print-id-label').innerText = "Exchange ID";
-            document.getElementById('print-exchange-id').innerText = currentExchangeId;
-            document.getElementById('print-cust-name').innerText = name;
-            document.getElementById('print-cust-phone').innerText = phone;
-            calculate();
-            renderSimpleBarcode(grandTotal);
-
-            const submitBtn = document.getElementById('btn-process-submit');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Submitting to Sheets...";
-
-            const submissionPromise = (async () => {
-                if (scriptUrl) {
-                    try {
-                        const formData = new URLSearchParams();
-                        formData.append('timestamp', new Date().toLocaleString());
-                        formData.append('exchangeId', currentExchangeId);
-                        formData.append('customerName', name);
-                        formData.append('customerPhone', phone);
-                        formData.append('alGross', al.gross);
-                        formData.append('alNet', al.net);
-                        formData.append('alAmount', al.cost);
-                        formData.append('stGross', st.gross);
-                        formData.append('stNet', st.net);
-                        formData.append('stAmount', st.cost);
-                        formData.append('grandTotal', grandTotal);
-                        formData.append('type', 'TRANSACTION');
-
-                        // FIX: was `if (convertingRowIndex)`, which silently dropped a valid
-                        // row index of 0 (falsy) — an estimate stored in the very first sheet
-                        // row would never get linked/marked converted. Compare to null instead.
-                        if (convertingRowIndex !== null) { formData.append('convertFromRow', convertingRowIndex); }
-
-                        await fetch(scriptUrl, {
-                            method: 'POST',
-                            mode: 'no-cors',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: formData.toString()
-                        });
-                    } catch (err) { console.error(err); }
-                }
-            })();
-
-            const timeoutPromise = new Promise(resolve => setTimeout(resolve, 2000));
-            await Promise.race([submissionPromise, timeoutPromise]);
-
-            submitBtn.disabled = false;
-            submitBtn.innerText = "Submit Exchange";
-
-            document.getElementById('btn-submit-est').classList.add('hidden');
-            document.getElementById('print-options-container').classList.remove('hidden');
-            document.getElementById('modal-status-icon').className = "w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto";
-            document.getElementById('modal-print-title').innerText = "Transaction Saved!";
-            document.getElementById('modal-print-subtitle').innerText = `Exchange ID: ${currentExchangeId}. Choose print format:`;
-
-            document.getElementById('modal-step-review').classList.add('hidden');
-            document.getElementById('modal-step-print').classList.remove('hidden');
-            fetchNextIds();
-        }
-
-        function triggerReceiptPrint(mode) {
-            setPrintMode(mode);
-            calculate();
-            renderSimpleBarcode(computeMaterial('al').cost + computeMaterial('st').cost);
-
-            setTimeout(() => {
-                window.print();
-                convertingRowIndex = null;
-            }, 400);
-        }
-
-        function resetForm() { window.location.reload(); }
-
-        init();
-    </script>
+    <div class="settings-label">Saved Percentages</div>
+    <div id="saved-percentages-list" class="pct-pill-list"></div>
+
+    <div class="settings-label" style="margin-top:14px;">Scrap Exchange Rates</div>
+    <div class="rate-edit-grid">
+      <div class="rate-edit-field">
+        <label>Aluminium ₹/kg</label>
+        <input type="number" inputmode="decimal" id="rate-alu-input" min="0" step="1" enterkeyhint="done">
+      </div>
+      <div class="rate-edit-field">
+        <label>Steel ₹/kg</label>
+        <input type="number" inputmode="decimal" id="rate-steel-input" min="0" step="1" enterkeyhint="done">
+      </div>
+      <div class="rate-edit-field">
+        <label>Handle Wt (kg)</label>
+        <input type="number" inputmode="decimal" id="rate-handle-input" min="0" step="0.01" enterkeyhint="done">
+      </div>
+    </div>
+    <button class="save-rates-btn" onclick="saveScrapRates()">Save Rates</button>
+
+    <div class="settings-done">
+      <button onclick="toggleSettingsModal()">Done / Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Direct Amount Modal -->
+<div id="direct-modal" class="overlay">
+  <div class="sheet direct-modal-sheet">
+    <h3>Add Direct Amount</h3>
+    <p>Adds an item at this exact final amount, no discount applied.</p>
+    <div class="direct-modal-input">
+      <span class="rupee">₹</span>
+      <input type="number" inputmode="decimal" id="direct-modal-input" placeholder="0.00" min="0" step="1" enterkeyhint="done">
+    </div>
+    <input type="text" id="direct-modal-name" class="direct-modal-name" placeholder="Item name (optional)" maxlength="40" enterkeyhint="done">
+    <div class="direct-modal-btns">
+      <button class="btn-cancel" onclick="closeDirectModal()">Cancel</button>
+      <button class="btn-yes" style="background:var(--accent);" onclick="confirmDirectAdd()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Logo Preview Modal -->
+<div id="logo-preview-modal" class="overlay" onclick="closeLogoPreview()">
+  <div class="sheet logo-preview-sheet" onclick="event.stopPropagation()">
+    <img src="icon-512.png" alt="Offer Calc" class="logo-preview-img">
+    <h3>Offer Calc</h3>
+    <p>Lalitha Naturals</p>
+    <button class="btn-cancel" style="width:100%;" onclick="closeLogoPreview()">Close Preview</button>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirm-modal" class="overlay">
+  <div class="sheet confirm-sheet">
+    <div class="confirm-icon">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+    </div>
+    <h3 id="confirm-title">Confirm Action</h3>
+    <p id="confirm-desc">Are you sure you want to proceed?</p>
+    <div class="confirm-btns">
+      <button id="confirm-yes-btn" class="btn-yes">Yes, Proceed</button>
+      <button class="btn-cancel" onclick="closeConfirmModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">
+  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  <span id="toast-msg">Saved</span>
+</div>
+
+<!-- Hidden native-print receipt (AirPrint / system print dialog path) -->
+<div id="print-area"><div id="print-area-content" class="rcpt"></div></div>
+
+<script src="jspdf.umd.min.js" defer></script>
+<script src="html2canvas.min.js" defer></script>
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- keep the app's height pinned to the real, current viewport height ----------
+     iOS Safari (and standalone/home-screen launches) can report a viewport height that is
+     briefly wrong right at launch, or that changes as the browser chrome shows/hides — this
+     is what makes the page sometimes stretch fully and sometimes leave a gap. Recomputing
+     --app-height from window.innerHeight (and visualViewport, when available, since it tracks
+     iOS Safari's real visible area more reliably) fixes it on iPhone by default. */
+  function setAppHeight(){
+    var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.documentElement.style.setProperty('--app-height', h + 'px');
+  }
+  setAppHeight();
+  window.addEventListener('resize', setAppHeight);
+  window.addEventListener('orientationchange', function(){
+    setAppHeight();
+    setTimeout(setAppHeight, 120);
+    setTimeout(setAppHeight, 400);
+  });
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', setAppHeight);
+  }
+  // iOS sometimes settles the real chrome/status-bar size a moment after 'load'.
+  window.addEventListener('load', function(){
+    setTimeout(setAppHeight, 50);
+    setTimeout(setAppHeight, 300);
+    setTimeout(setAppHeight, 800);
+  });
+
+  /* ---------- storage helpers (never let a blocked/full localStorage crash the app) ---------- */
+  function lsGet(key, fallback){
+    try{
+      var v = localStorage.getItem(key);
+      return v === null ? fallback : JSON.parse(v);
+    }catch(e){ return fallback; }
+  }
+  function lsSet(key, value){
+    try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){ /* storage unavailable — app still works this session */ }
+  }
+
+  /* ---------- state ---------- */
+  var currentMrpInput = "0";
+  var permanentPercentages = lsGet('lalitha_pcts', [20, 40]);
+  if (!Array.isArray(permanentPercentages) || permanentPercentages.length === 0) permanentPercentages = [20, 40];
+  var currentDiscountPct = permanentPercentages.includes(20) ? 20 : permanentPercentages[0];
+  var billItems = lsGet('lalitha_bill_items', []);
+  var savedScrapData = lsGet('lalitha_scrap_data', {directAmt:"", alWt:"", alH:"", stWt:"", stH:"", active:true});
+  if (savedScrapData.active === undefined) savedScrapData.active = true;
+
+  var savedScrapRates = lsGet('lalitha_scrap_rates', {alu: 150, steel: 50, handleKg: 0.1});
+  var ALU_RATE = savedScrapRates.alu, STEEL_RATE = savedScrapRates.steel, HANDLE_KG = savedScrapRates.handleKg;
+  var APP_URL = 'https://lalithanaturals.github.io/Offer-Calc/';
+
+  /* ---------- element refs ---------- */
+  var mrpDisplay = document.getElementById('mrp-display');
+  var activeDiscBadge = document.getElementById('active-disc-badge');
+  var liveSaved = document.getElementById('live-saved');
+  var liveFinal = document.getElementById('live-final');
+  var discountChips = document.getElementById('discount-chips');
+  var itemNameInput = document.getElementById('item-name-input');
+
+  var exDirectAmount = document.getElementById('ex-direct-amount');
+  var exAluminumWeight = document.getElementById('ex-aluminum-weight');
+  var exAluminumHandles = document.getElementById('ex-aluminum-handles');
+  var exAluminumCost = document.getElementById('ex-aluminum-cost');
+  var exSteelWeight = document.getElementById('ex-steel-weight');
+  var exSteelHandles = document.getElementById('ex-steel-handles');
+  var exSteelCost = document.getElementById('ex-steel-cost');
+  var liveTotalExchange = document.getElementById('live-total-exchange');
+
+  var summaryCount = document.getElementById('summary-count');
+  var summaryTotalMrp = document.getElementById('summary-total-mrp');
+  var summarySaved = document.getElementById('summary-saved');
+  var summaryGrandTotal = document.getElementById('summary-grand-total');
+  var summaryScrapChip = document.getElementById('summary-scrap-chip');
+  var summaryTotalExchange = document.getElementById('summary-total-exchange');
+
+  var billModal = document.getElementById('bill-modal');
+  var billItemsList = document.getElementById('bill-items-list');
+  var modalGrandTotal = document.getElementById('modal-grand-total');
+
+  var printPreviewModal = document.getElementById('print-preview-modal');
+  var receiptPreviewContainer = document.getElementById('receipt-preview-container');
+  var printAreaContent = document.getElementById('print-area-content');
+
+  var scrapBody = document.getElementById('scrap-body');
+  var scrapToggleIcon = document.getElementById('scrap-toggle-icon');
+
+  var settingsModal = document.getElementById('settings-modal');
+  var newPctInput = document.getElementById('new-pct-input');
+  var savedPercentagesList = document.getElementById('saved-percentages-list');
+  var rateAluInput = document.getElementById('rate-alu-input');
+  var rateSteelInput = document.getElementById('rate-steel-input');
+  var rateHandleInput = document.getElementById('rate-handle-input');
+  var metalRateAlu = document.getElementById('metal-rate-alu');
+  var metalRateSteel = document.getElementById('metal-rate-steel');
+  var handleLabelAlu = document.getElementById('handle-label-alu');
+  var handleLabelSteel = document.getElementById('handle-label-steel');
+
+  var directModal = document.getElementById('direct-modal');
+  var directModalInput = document.getElementById('direct-modal-input');
+  var directModalName = document.getElementById('direct-modal-name');
+
+  var logoPreviewModal = document.getElementById('logo-preview-modal');
+
+  var confirmModal = document.getElementById('confirm-modal');
+  var confirmTitle = document.getElementById('confirm-title');
+  var confirmDesc = document.getElementById('confirm-desc');
+  var confirmYesBtn = document.getElementById('confirm-yes-btn');
+
+  var toast = document.getElementById('toast');
+  var toastMsg = document.getElementById('toast-msg');
+
+  /* ---------- init ---------- */
+  window.addEventListener('DOMContentLoaded', function(){
+    if (exDirectAmount) exDirectAmount.value = savedScrapData.directAmt || "";
+    if (exAluminumWeight) exAluminumWeight.value = savedScrapData.alWt || "";
+    if (exAluminumHandles) exAluminumHandles.value = savedScrapData.alH || "";
+    if (exSteelWeight) exSteelWeight.value = savedScrapData.stWt || "";
+    if (exSteelHandles) exSteelHandles.value = savedScrapData.stH || "";
+    renderDiscountChips();
+    renderSettingsPercentages();
+    updateScrapRateLabels();
+    updateLivePreview();
+    updateBillSummary();
+    registerServiceWorker();
+  });
+
+  function registerServiceWorker(){
+    if ('serviceWorker' in navigator){
+      window.addEventListener('load', function(){
+        navigator.serviceWorker.register('sw.js').catch(function(){ /* offline caching is a nice-to-have, ignore failures */ });
+      });
+    }
+  }
+
+  /* ---------- number helpers ---------- */
+  function round2(n){ return Math.round((n + Number.EPSILON) * 100) / 100; }
+  function safeFloat(v){ var n = parseFloat(v); return isNaN(n) || !isFinite(n) ? 0 : n; }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function formatCurrency(amount){
+    amount = round2(Math.max(0, safeFloat(amount)));
+    return '₹' + amount.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  /* ---------- discount percentages ---------- */
+  function renderDiscountChips(){
+    var html = "";
+    permanentPercentages.forEach(function(pct){
+      var isActive = currentDiscountPct === pct;
+      html += '<button class="disc-chip' + (isActive ? ' active' : '') + '" onclick="setDiscount(' + pct + ')">' + pct + '%</button>';
+    });
+    discountChips.innerHTML = html;
+  }
+
+  function renderSettingsPercentages(){
+    var html = "";
+    permanentPercentages.forEach(function(pct, index){
+      var removeBtn = permanentPercentages.length > 1
+        ? '<button onclick="removePercentage(' + index + ')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>'
+        : '';
+      html += '<div class="pct-pill"><span>' + pct + '% OFF</span>' + removeBtn + '</div>';
+    });
+    savedPercentagesList.innerHTML = html;
+  }
+
+  function addNewPercentage(){
+    var val = parseInt(newPctInput.value, 10);
+    if (isNaN(val) || val <= 0 || val > 100){
+      showToast('Enter a valid percentage (1-100)!');
+      return;
+    }
+    if (permanentPercentages.includes(val)){
+      showToast('Percentage already exists!');
+      return;
+    }
+    permanentPercentages.push(val);
+    permanentPercentages.sort(function(a, b){ return a - b; });
+    lsSet('lalitha_pcts', permanentPercentages);
+    newPctInput.value = "";
+    renderDiscountChips();
+    renderSettingsPercentages();
+    showToast('Added ' + val + '% discount!');
+  }
+
+  function removePercentage(index){
+    var removed = permanentPercentages.splice(index, 1)[0];
+    if (currentDiscountPct === removed){
+      currentDiscountPct = permanentPercentages[0] || 0;
+    }
+    lsSet('lalitha_pcts', permanentPercentages);
+    renderDiscountChips();
+    renderSettingsPercentages();
+    updateLivePreview();
+    showToast('Removed ' + removed + '% discount.');
+  }
+
+  function setDiscount(pct){
+    currentDiscountPct = pct;
+    activeDiscBadge.textContent = pct + '% OFF Active';
+    renderDiscountChips();
+    updateLivePreview();
+  }
+
+  /* ---------- keypad ---------- */
+  function appendValue(val){
+    if (currentMrpInput === "0" && val !== "."){
+      currentMrpInput = val;
+    } else {
+      if (val === "." && currentMrpInput.includes(".")) return;
+      if (currentMrpInput.replace(".", "").length >= 9) return;
+      currentMrpInput += val;
+    }
+    updateLivePreview();
+  }
+  function backspace(){
+    currentMrpInput = currentMrpInput.length > 1 ? currentMrpInput.slice(0, -1) : "0";
+    updateLivePreview();
+  }
+  function clearCalculator(){
+    currentMrpInput = "0";
+    updateLivePreview();
+  }
+
+  /* ---------- scrap exchange ---------- */
+  function toggleScrapSection(){
+    var isOpen = scrapBody.classList.contains('open');
+    scrapBody.classList.toggle('open', !isOpen);
+    scrapToggleIcon.classList.toggle('open', !isOpen);
+  }
+
+  function getCurrentExchangeValuesObj(){
+    var directAmt = safeFloat(exDirectAmount.value);
+    if (directAmt > 0){
+      if (exAluminumCost) exAluminumCost.textContent = '₹0.00';
+      if (exSteelCost) exSteelCost.textContent = '₹0.00';
+      var amt = round2(directAmt);
+      if (liveTotalExchange) liveTotalExchange.textContent = formatCurrency(amt);
+      return { amount: amt, details: 'Direct Scrap Amount' };
+    }
+
+    var alWt = Math.max(0, safeFloat(exAluminumWeight.value));
+    var alHCount = Math.max(0, safeFloat(exAluminumHandles.value));
+    var stWt = Math.max(0, safeFloat(exSteelWeight.value));
+    var stHCount = Math.max(0, safeFloat(exSteelHandles.value));
+
+    var alNetWt = Math.max(0, alWt - (alHCount * HANDLE_KG));
+    var alCost = round2(alNetWt * ALU_RATE);
+
+    var stNetWt = Math.max(0, stWt - (stHCount * HANDLE_KG));
+    var stCost = round2(stNetWt * STEEL_RATE);
+
+    if (exAluminumCost) exAluminumCost.textContent = formatCurrency(alCost) + (alHCount > 0 ? ' (−' + (alHCount * HANDLE_KG).toFixed(1) + 'kg)' : '');
+    if (exSteelCost) exSteelCost.textContent = formatCurrency(stCost) + (stHCount > 0 ? ' (−' + (stHCount * HANDLE_KG).toFixed(1) + 'kg)' : '');
+
+    var details = [];
+    if (alWt > 0) details.push('Al: ' + alWt + 'kg (' + alHCount + 'h)');
+    if (stWt > 0) details.push('St: ' + stWt + 'kg (' + stHCount + 'h)');
+
+    var totalEx = round2(alCost + stCost);
+    if (liveTotalExchange) liveTotalExchange.textContent = formatCurrency(totalEx);
+
+    return { amount: totalEx, details: details.join(' | ') || 'Weight deduction' };
+  }
+
+  function calculateExchangeValue(){
+    saveScrapStorage();
+    updateLivePreview();
+  }
+
+  function saveScrapStorage(){
+    savedScrapData.directAmt = exDirectAmount ? exDirectAmount.value : "";
+    savedScrapData.alWt = exAluminumWeight ? exAluminumWeight.value : "";
+    savedScrapData.alH = exAluminumHandles ? exAluminumHandles.value : "";
+    savedScrapData.stWt = exSteelWeight ? exSteelWeight.value : "";
+    savedScrapData.stH = exSteelHandles ? exSteelHandles.value : "";
+    lsSet('lalitha_scrap_data', savedScrapData);
+  }
+
+  function clearScrapValues(){
+    if (exDirectAmount) exDirectAmount.value = "";
+    if (exAluminumWeight) exAluminumWeight.value = "";
+    if (exAluminumHandles) exAluminumHandles.value = "";
+    if (exSteelWeight) exSteelWeight.value = "";
+    if (exSteelHandles) exSteelHandles.value = "";
+    savedScrapData = {directAmt:"", alWt:"", alH:"", stWt:"", stH:"", active:true};
+    saveScrapStorage();
+    updateLivePreview();
+    updateBillSummary();
+  }
+
+  function confirmClearScrap(e){
+    if (e) e.stopPropagation();
+    openConfirmModal('Clear Scrap Inputs', 'Reset all scrap exchange amounts, weights and handle counts?', function(){
+      clearScrapValues();
+      showToast('Scrap inputs cleared.');
+    });
+  }
+
+  function toggleScrapActive(){
+    savedScrapData.active = savedScrapData.active === false ? true : false;
+    saveScrapStorage();
+    updateBillSummary();
+  }
+
+  function confirmDeleteScrap(){
+    openConfirmModal('Remove Scrap Exchange', 'Remove the scrap exchange deduction from this bill?', function(){
+      clearScrapValues();
+      showToast('Scrap exchange removed.');
+    });
+  }
+
+  /* ---------- live preview + bill items ---------- */
+  function updateLivePreview(){
+    mrpDisplay.textContent = currentMrpInput;
+    var mrp = safeFloat(currentMrpInput);
+    var saved = round2(mrp * (currentDiscountPct / 100));
+    var final = round2(Math.max(0, mrp - saved));
+    liveSaved.textContent = 'Save ' + formatCurrency(saved);
+    liveFinal.textContent = formatCurrency(final);
+    activeDiscBadge.textContent = currentDiscountPct + '% OFF Active';
+    getCurrentExchangeValuesObj();
+    updateBillSummary();
+  }
+
+  function addItem(){
+    var mrp = safeFloat(currentMrpInput);
+    if (mrp <= 0){
+      showToast('Enter an MRP greater than 0!');
+      return;
+    }
+    var saved = round2(mrp * (currentDiscountPct / 100));
+    var final = round2(Math.max(0, mrp - saved));
+    var name = itemNameInput ? itemNameInput.value.trim().slice(0, 40) : "";
+    billItems.push({
+      id: Date.now() + Math.random(),
+      type: 'product',
+      name: name,
+      mrp: mrp,
+      discountPct: currentDiscountPct,
+      saved: saved,
+      final: final,
+      active: true
+    });
+    saveStorage();
+    currentMrpInput = "0";
+    if (itemNameInput) itemNameInput.value = "";
+    updateLivePreview();
+    updateBillSummary();
+    showToast('Added ' + (name ? name + ' — ' : '') + '₹' + mrp.toLocaleString('en-IN') + ' (' + currentDiscountPct + '%)');
+  }
+
+  /* ---------- direct amount modal ---------- */
+  function openDirectModal(){
+    directModalInput.value = "";
+    if (directModalName) directModalName.value = "";
+    directModal.classList.add('show');
+    setTimeout(function(){ directModalInput.focus(); }, 50);
+  }
+  function closeDirectModal(){ directModal.classList.remove('show'); }
+  function confirmDirectAdd(){
+    var finalAmt = safeFloat(directModalInput.value);
+    if (finalAmt <= 0){
+      showToast('Please enter a valid amount!');
+      return;
+    }
+    finalAmt = round2(finalAmt);
+    var name = directModalName ? directModalName.value.trim().slice(0, 40) : "";
+    billItems.push({
+      id: Date.now() + Math.random(),
+      type: 'product',
+      name: name,
+      mrp: finalAmt,
+      discountPct: 0,
+      saved: 0,
+      final: finalAmt,
+      active: true
+    });
+    saveStorage();
+    closeDirectModal();
+    updateBillSummary();
+    showToast('Added ' + (name ? name + ' — ' : '') + '₹' + finalAmt.toLocaleString('en-IN'));
+  }
+
+  function toggleItemActive(id){
+    var item = billItems.find(function(i){ return i.id === id; });
+    if (item){
+      item.active = item.active === false ? true : false;
+      saveStorage();
+      updateBillSummary();
+    }
+  }
+
+  function confirmRemoveItem(id){
+    openConfirmModal('Delete Item', 'Remove this item from the bill?', function(){
+      billItems = billItems.filter(function(item){ return item.id !== id; });
+      saveStorage();
+      updateBillSummary();
+      showToast('Item removed.');
+    });
+  }
+
+  function saveStorage(){ lsSet('lalitha_bill_items', billItems); }
+
+  function shareApp(){
+    // Called synchronously from the button's onclick (a real user gesture), so the OS
+    // share sheet opens immediately with no extra tap or dialog in between.
+    var shareData = { title: 'Offer Calc — Lalitha Naturals', url: APP_URL };
+    var canUseNativeShare = !!navigator.share && (!navigator.canShare || navigator.canShare(shareData));
+    if (canUseNativeShare){
+      try {
+        navigator.share(shareData).catch(function(){ /* user cancelled the share sheet, ignore */ });
+        return;
+      } catch (e) { /* fall through to clipboard fallback below */ }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(APP_URL).then(function(){
+        showToast('Link copied! Paste it to share.');
+      }).catch(function(){
+        showToast(APP_URL);
+      });
+    } else {
+      showToast(APP_URL);
+    }
+  }
+
+  function confirmReset(){
+    openConfirmModal('Reset Everything', 'This clears all bill items and scrap exchange data. This cannot be undone.', function(){
+      currentMrpInput = "0";
+      clearScrapValues();
+      billItems = [];
+      lsSet('lalitha_bill_items', []);
+      updateLivePreview();
+      updateBillSummary();
+      showToast('All data reset.');
+    });
+  }
+
+  function computeTotals(){
+    var totalMrp = 0, totalSaved = 0, grandTotal = 0, activeCount = 0;
+    billItems.forEach(function(item){
+      if (item.active === false) return;
+      totalMrp += item.mrp;
+      totalSaved += item.saved;
+      grandTotal += item.final;
+      activeCount++;
+    });
+    var exObj = getCurrentExchangeValuesObj();
+    var totalExchange = (exObj.amount > 0 && savedScrapData.active !== false) ? exObj.amount : 0;
+    grandTotal = round2(Math.max(0, grandTotal - totalExchange));
+    return {
+      totalMrp: round2(totalMrp),
+      totalSaved: round2(totalSaved),
+      grandTotal: grandTotal,
+      exObj: exObj,
+      totalExchange: round2(totalExchange),
+      activeCount: activeCount + ((exObj.amount > 0 && savedScrapData.active !== false) ? 1 : 0)
+    };
+  }
+
+  function updateBillSummary(){
+    var t = computeTotals();
+
+    summaryCount.textContent = t.activeCount;
+    summaryTotalMrp.textContent = formatCurrency(t.totalMrp);
+    summarySaved.textContent = formatCurrency(t.totalSaved);
+    summaryGrandTotal.textContent = formatCurrency(t.grandTotal);
+    modalGrandTotal.textContent = formatCurrency(t.grandTotal);
+
+    if (t.exObj.amount > 0){
+      summaryScrapChip.classList.add('show');
+      summaryTotalExchange.textContent = formatCurrency(t.exObj.amount);
+      summaryScrapChip.style.opacity = savedScrapData.active === false ? '0.4' : '1';
+    } else {
+      summaryScrapChip.classList.remove('show');
+    }
+
+    renderBillModalList(t);
+  }
+
+  function renderBillModalList(t){
+    t = t || computeTotals();
+    var hasExchange = t.exObj.amount > 0;
+
+    if (billItems.length === 0 && !hasExchange){
+      billItemsList.innerHTML = '<div class="empty-note">No items or scrap exchange added yet.</div>';
+      return;
+    }
+
+    var html = "";
+    var displayIndex = 1;
+
+    billItems.forEach(function(item){
+      var isActive = item.active !== false;
+      var rowClass = isActive ? '' : 'off';
+      var eyeIcon = isActive
+        ? '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
+        : '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.03 10.03 0 014.228-5.32m3.155-1.396A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21M3 3l18 18"/></svg>';
+      var badge = item.discountPct > 0
+        ? '<span class="item-badge pct">' + item.discountPct + '% OFF</span>'
+        : '<span class="item-badge direct">DIRECT</span>';
+      var nameLine = item.name ? escapeHtml(item.name) : 'Item';
+      var subLine = 'MRP ' + formatCurrency(item.mrp) + (item.saved > 0 ? ' · Save <b>' + formatCurrency(item.saved) + '</b>' : '');
+
+      html += '' +
+        '<div class="item-row ' + rowClass + '">' +
+          '<div class="item-left">' +
+            '<div class="item-idx">' + (displayIndex++) + '</div>' +
+            '<div class="item-info">' +
+              '<div class="item-name tabular"><span class="item-name-text">' + nameLine + '</span>' + badge + '</div>' +
+              '<div class="item-sub">' + subLine + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="item-right">' +
+            '<div class="item-amt">' +
+              '<div class="l">Final</div>' +
+              '<div class="v tabular">' + formatCurrency(item.final) + '</div>' +
+            '</div>' +
+            '<button class="ghost-btn" onclick="toggleItemActive(' + item.id + ')" title="' + (isActive ? 'Disable' : 'Enable') + '">' + eyeIcon + '</button>' +
+            '<button class="ghost-btn danger" onclick="confirmRemoveItem(' + item.id + ')" title="Delete">' +
+              '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
+            '</button>' +
+          '</div>' +
+        '</div>';
+    });
+
+    if (hasExchange){
+      var isScrapActive = savedScrapData.active !== false;
+      var scrapRowClass = isScrapActive ? 'exchange' : 'exchange off';
+      var scrapEye = isScrapActive
+        ? '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>'
+        : '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.03 10.03 0 014.228-5.32m3.155-1.396A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21M3 3l18 18"/></svg>';
+
+      html += '' +
+        '<div class="item-row ' + scrapRowClass + '">' +
+          '<div class="item-left">' +
+            '<div class="item-idx orange">' + (displayIndex++) + '</div>' +
+            '<div>' +
+              '<div class="item-name" style="font-size:13px;color:var(--accent);">Scrap Exchange</div>' +
+              '<div class="item-sub">' + (t.exObj.details || 'Weight deduction') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="item-right">' +
+            '<div class="item-amt">' +
+              '<div class="l">Deduction</div>' +
+              '<div class="v deduct tabular">-' + formatCurrency(t.exObj.amount) + '</div>' +
+            '</div>' +
+            '<button class="ghost-btn" onclick="toggleScrapActive()" title="' + (isScrapActive ? 'Disable' : 'Enable') + '">' + scrapEye + '</button>' +
+            '<button class="ghost-btn danger" onclick="confirmDeleteScrap()" title="Delete">' +
+              '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
+            '</button>' +
+          '</div>' +
+        '</div>';
+    }
+
+    billItemsList.innerHTML = html;
+  }
+
+  /* ---------- receipt model + HTML (shared by preview / native print / PDF capture →
+     guarantees the three always look identical) ---------- */
+  function buildReceiptModel(){
+    var activeItems = billItems.filter(function(i){ return i.active !== false && i.type === 'product'; });
+    var exObj = getCurrentExchangeValuesObj();
+    var totalExchange = (exObj.amount > 0 && savedScrapData.active !== false) ? exObj.amount : 0;
+
+    var totalMrp = 0, totalSaved = 0, grandTotal = 0;
+    activeItems.forEach(function(item){ totalMrp += item.mrp; totalSaved += item.saved; grandTotal += item.final; });
+    grandTotal = round2(Math.max(0, grandTotal - totalExchange));
+
+    var now = new Date();
+    var dateStr = now.toLocaleDateString('en-IN');
+    var timeStr = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+
+    var items = activeItems.map(function(item, i){
+      return {
+        idx: i + 1,
+        name: item.name ? escapeHtml(item.name) : null,
+        mrp: item.mrp,
+        saved: item.saved,
+        final: item.final,
+        tag: item.discountPct > 0 ? (item.discountPct + '% OFF') : 'DIRECT'
+      };
+    });
+
+    return {
+      dateStr: dateStr, timeStr: timeStr,
+      items: items,
+      scrap: totalExchange > 0 ? { details: exObj.details || 'Weight deduction', amount: totalExchange } : null,
+      totalMrp: totalMrp, totalSaved: totalSaved, totalExchange: totalExchange, grandTotal: grandTotal,
+      hasContent: activeItems.length > 0 || totalExchange > 0
+    };
+  }
+
+  function money(n){ return formatCurrency(n); }
+
+  function renderReceiptHTML(m){
+    var html = '';
+    html += '<div class="rcpt-head">' +
+      '<div><div class="rcpt-title">LALITHA NATURALS</div><div class="rcpt-title2">Billing Receipt</div></div>' +
+      '<div class="rcpt-head-right"><div class="rcpt-label">Date</div><div class="rcpt-id">' + m.dateStr + '</div></div>' +
+    '</div>';
+    html += '<div class="rcpt-sub">' + m.timeStr + ' &middot; Offer Calc</div>';
+    html += '<div class="rcpt-dash"></div>';
+
+    m.items.forEach(function(item, i){
+      html += '<div class="rcpt-section">';
+      html += '<div class="rcpt-section-title"><span>' + (item.name ? (item.idx + '. ' + item.name) : ('Item ' + item.idx)) + '</span><span class="rcpt-tag">' + item.tag + '</span></div>';
+      html += '<div class="rcpt-row"><span>MRP</span><b>' + money(item.mrp) + '</b></div>';
+      if (item.saved > 0){
+        html += '<div class="rcpt-row"><span>Saved</span><b>' + money(item.saved) + '</b></div>';
+      }
+      html += '<div class="rcpt-hr"></div>';
+      html += '<div class="rcpt-row rcpt-row-strong"><span>Final</span><b>' + money(item.final) + '</b></div>';
+      html += '</div>';
+      if (i < m.items.length - 1 || m.scrap) html += '<div class="rcpt-dash"></div>';
+    });
+
+    if (m.scrap){
+      html += '<div class="rcpt-section">';
+      html += '<div class="rcpt-section-title"><span>Scrap Exchange Credit</span></div>';
+      html += '<div class="rcpt-row"><span>' + escapeHtml(m.scrap.details) + '</span><b>&minus;' + money(m.scrap.amount) + '</b></div>';
+      html += '</div>';
+    }
+    html += '<div class="rcpt-dash"></div>';
+
+    html += '<div class="rcpt-totals">';
+    html += '<div class="rcpt-row"><span>Total MRP</span><b>' + money(m.totalMrp) + '</b></div>';
+    html += '<div class="rcpt-row"><span>Total Saved</span><b>' + money(m.totalSaved) + '</b></div>';
+    if (m.totalExchange > 0){
+      html += '<div class="rcpt-row"><span>Scrap Credit</span><b>&minus;' + money(m.totalExchange) + '</b></div>';
+    }
+    html += '</div>';
+    html += '<div class="rcpt-thick"></div>';
+
+    html += '<div class="rcpt-grand"><div class="rcpt-grand-label">Grand Total Payable</div><div class="rcpt-grand-amt">' + money(m.grandTotal) + '</div></div>';
+    html += '<div class="rcpt-dash"></div>';
+    html += '<div class="rcpt-footer">Thank you for shopping!<br>Please retain receipt.</div>';
+
+    return html;
+  }
+
+  function openPrintPreview(){
+    var receipt = buildReceiptModel();
+    if (!receipt.hasContent){
+      showToast('No active items to preview!');
+      return;
+    }
+    receiptPreviewContainer.innerHTML = renderReceiptHTML(receipt);
+    printPreviewModal.classList.add('show');
+  }
+  function closePrintPreview(){ printPreviewModal.classList.remove('show'); }
+
+  function printReceipt(){
+    var receipt = buildReceiptModel();
+    if (!receipt.hasContent){
+      showToast('No active items to print!');
+      return;
+    }
+    printAreaContent.innerHTML = renderReceiptHTML(receipt);
+    setTimeout(function(){ window.print(); }, 50);
+  }
+
+  /* ---------- PDF export (jsPDF vendored locally, loaded via a plain <script defer> tag —
+     no CDN dependency for a core feature, so it always works instantly and offline) ---------- */
+  function ensureJsPDF(){
+    if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve();
+    // defer-loaded script may still be parsing on a very first paint; wait briefly for it.
+    return new Promise(function(resolve, reject){
+      var tries = 0;
+      var timer = setInterval(function(){
+        tries++;
+        if (window.jspdf && window.jspdf.jsPDF){ clearInterval(timer); resolve(); }
+        else if (tries > 40){ clearInterval(timer); reject(new Error('PDF library failed to load.')); }
+      }, 50);
+    });
+  }
+
+  function ensureHtml2Canvas(){
+    if (window.html2canvas) return Promise.resolve();
+    return new Promise(function(resolve, reject){
+      var tries = 0;
+      var timer = setInterval(function(){
+        tries++;
+        if (window.html2canvas){ clearInterval(timer); resolve(); }
+        else if (tries > 40){ clearInterval(timer); reject(new Error('PDF library failed to load.')); }
+      }, 50);
+    });
+  }
+
+  // Renders the exact same styled receipt (buildReceiptModel + renderReceiptHTML) used by the
+  // on-screen preview and native print, off-screen at a fixed pixel width, then rasterizes it
+  // with html2canvas so the downloaded PDF looks identical to what the customer sees and prints
+  // — same fonts, dashed rules, bold totals — instead of a plain monospace text dump.
+  function downloadPDF(){
+    var receipt = buildReceiptModel();
+    if (!receipt.hasContent){
+      showToast('No active items to export!');
+      return;
+    }
+    showToast('Preparing PDF…');
+    Promise.all([ensureJsPDF(), ensureHtml2Canvas()]).then(function(){
+      var jsPDF = window.jspdf.jsPDF;
+      var RENDER_WIDTH_PX = 384; // ~80mm at a crisp, standard thermal-printer dot density
+
+      var clone = document.createElement('div');
+      clone.className = 'rcpt';
+      clone.style.cssText = 'position:fixed; left:-9999px; top:0; width:' + RENDER_WIDTH_PX + 'px; background:#fff; padding:14px 12px; box-sizing:border-box;';
+      clone.innerHTML = renderReceiptHTML(receipt);
+      document.body.appendChild(clone);
+
+      window.html2canvas(clone, { scale: 3, backgroundColor: '#ffffff', useCORS: true }).then(function(canvas){
+        document.body.removeChild(clone);
+        // JPEG (not PNG) — the receipt has an opaque white background so no transparency is
+        // needed, and jsPDF embeds a JPEG's already-compressed data as-is, versus a PNG which
+        // it re-stores as a raw, uncompressed bitmap (several MB for a receipt this size).
+        var imgData = canvas.toDataURL('image/jpeg', 0.92);
+        var pageWidthMm = 80;
+        var imgHeightMm = (canvas.height / canvas.width) * pageWidthMm;
+        var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pageWidthMm, Math.max(pageWidthMm + 10, imgHeightMm)] });
+        doc.addImage(imgData, 'JPEG', 0, 0, pageWidthMm, imgHeightMm);
+        doc.save('Lalitha_Naturals_Receipt_' + new Date().toISOString().slice(0,10) + '.pdf');
+        showToast('Receipt PDF saved!');
+      }).catch(function(err){
+        if (clone.parentNode) document.body.removeChild(clone);
+        showToast(err.message || 'Could not generate PDF.');
+      });
+    }).catch(function(err){
+      showToast(err.message || 'Could not generate PDF.');
+    });
+  }
+
+  /* ---------- confirm modal ---------- */
+  function openConfirmModal(title, desc, onConfirm){
+    confirmTitle.textContent = title;
+    confirmDesc.textContent = desc;
+    confirmYesBtn.onclick = function(){ closeConfirmModal(); onConfirm(); };
+    confirmModal.classList.add('show');
+  }
+  function closeConfirmModal(){ confirmModal.classList.remove('show'); }
+
+  /* ---------- modal toggles ---------- */
+  function toggleBillModal(){ billModal.classList.toggle('show'); }
+  function toggleSettingsModal(){
+    settingsModal.classList.toggle('show');
+    if (settingsModal.classList.contains('show')) renderScrapRateInputs();
+  }
+
+  function renderScrapRateInputs(){
+    if (rateAluInput) rateAluInput.value = ALU_RATE;
+    if (rateSteelInput) rateSteelInput.value = STEEL_RATE;
+    if (rateHandleInput) rateHandleInput.value = HANDLE_KG;
+  }
+
+  function updateScrapRateLabels(){
+    if (metalRateAlu) metalRateAlu.textContent = '₹' + ALU_RATE + '/kg';
+    if (metalRateSteel) metalRateSteel.textContent = '₹' + STEEL_RATE + '/kg';
+    var handleTxt = 'Handles (−' + (HANDLE_KG >= 1 ? HANDLE_KG + 'kg' : Math.round(HANDLE_KG * 1000) + 'g') + ')';
+    if (handleLabelAlu) handleLabelAlu.textContent = handleTxt;
+    if (handleLabelSteel) handleLabelSteel.textContent = handleTxt;
+  }
+
+  function saveScrapRates(){
+    var alu = safeFloat(rateAluInput.value);
+    var steel = safeFloat(rateSteelInput.value);
+    var handle = safeFloat(rateHandleInput.value);
+    if (alu <= 0 || steel <= 0 || handle < 0){
+      showToast('Enter valid rates!');
+      return;
+    }
+    ALU_RATE = alu;
+    STEEL_RATE = steel;
+    HANDLE_KG = handle;
+    lsSet('lalitha_scrap_rates', {alu: ALU_RATE, steel: STEEL_RATE, handleKg: HANDLE_KG});
+    updateScrapRateLabels();
+    calculateExchangeValue();
+    showToast('Scrap rates saved!');
+  }
+  function openLogoPreview(){ logoPreviewModal.classList.add('show'); }
+  function closeLogoPreview(){ logoPreviewModal.classList.remove('show'); }
+
+  /* ---------- toast ---------- */
+  var toastTimer = null;
+  function showToast(message){
+    toastMsg.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 2000);
+  }
+
+  /* ---------- expose functions used by inline onclick handlers ---------- */
+  window.appendValue = appendValue;
+  window.backspace = backspace;
+  window.clearCalculator = clearCalculator;
+  window.toggleScrapSection = toggleScrapSection;
+  window.calculateExchangeValue = calculateExchangeValue;
+  window.confirmClearScrap = confirmClearScrap;
+  window.toggleScrapActive = toggleScrapActive;
+  window.confirmDeleteScrap = confirmDeleteScrap;
+  window.setDiscount = setDiscount;
+  window.addNewPercentage = addNewPercentage;
+  window.removePercentage = removePercentage;
+  window.openDirectModal = openDirectModal;
+  window.closeDirectModal = closeDirectModal;
+  window.confirmDirectAdd = confirmDirectAdd;
+  window.addItem = addItem;
+  window.toggleItemActive = toggleItemActive;
+  window.confirmRemoveItem = confirmRemoveItem;
+  window.confirmReset = confirmReset;
+  window.openPrintPreview = openPrintPreview;
+  window.closePrintPreview = closePrintPreview;
+  window.printReceipt = printReceipt;
+  window.downloadPDF = downloadPDF;
+  window.closeConfirmModal = closeConfirmModal;
+  window.toggleBillModal = toggleBillModal;
+  window.toggleSettingsModal = toggleSettingsModal;
+  window.openLogoPreview = openLogoPreview;
+  window.closeLogoPreview = closeLogoPreview;
+  window.shareApp = shareApp;
+  window.saveScrapRates = saveScrapRates;
+
+})();
+</script>
 </body>
 </html>
