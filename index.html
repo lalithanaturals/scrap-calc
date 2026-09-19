@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Scrap Calculator</title>
-    <!-- Device-width detection: the app defaults to a fixed iPhone-16-Pro-sized card.
-         Only on Android does it switch to the old full-width "stretch" layout, since
-         Android's huge range of screen sizes/aspect ratios makes a fixed width unusable
-         there. This runs before body paint so there's no layout flash. -->
+    <!-- Device detection: on a PC/desktop browser the app defaults to a fixed
+         iPhone-16-Pro-sized card. On any mobile device (iPhone, Android, iPad,
+         Windows Phone, etc.) it switches to the full-width "stretch" layout instead,
+         since a fixed 402px card either overflows or wastes space on the wide range
+         of real phone screen sizes. This runs before body paint so there's no layout
+         flash either way. */
     <script>
-        if (/Android/i.test(navigator.userAgent)) {
+        var isMobileDevice = /Android|iPhone|iPad|iPod|Windows Phone|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+        if (isMobileDevice) {
             document.documentElement.classList.add('stretch-mode');
         }
     </script>
@@ -33,9 +36,9 @@
         .no-print { display: block; }
         .print-only { display: none; }
 
-        /* Default: fixed iPhone 16 Pro width (402px logical/CSS px), centered on screen.
-           No "stretch to fill viewport" behavior unless .stretch-mode is set on <html>
-           (Android only, see the detection script in <head>). */
+        /* Default (PC/desktop): fixed iPhone 16 Pro width (402px logical/CSS px),
+           centered on screen. On mobile devices .stretch-mode is set on <html> by the
+           detection script in <head>, switching to full-width instead. */
         .app-shell {
             width: 402px;
             max-width: 402px;
@@ -588,7 +591,55 @@
                     return biSafe - aiSafe;
                 });
             }
+            // No rowIndex to go on. Records carry their own id (e.g. "LNex44"/"Est12"),
+            // so sort on that id's numeric part instead of assuming array order — a
+            // reliable "newest first" regardless of how the records were fetched/merged.
+            const idNum = (r) => {
+                const parsed = splitIdNumber(r && (r.estId || r.exchangeId));
+                return parsed ? parsed.num : -Infinity;
+            };
+            const hasUsableId = records.some(r => idNum(r) !== -Infinity);
+            if (hasUsableId) {
+                return records.slice().sort((a, b) => idNum(b) - idNum(a));
+            }
             return records.slice().reverse();
+        }
+
+        // Splits an id like "LNex45" into {prefix: "LNex", num: 45}. Returns null if it
+        // doesn't end in a number (defensive — ids are expected to always look like this).
+        function splitIdNumber(id) {
+            const match = /^(.*?)(\d+)$/.exec(String(id || ''));
+            if (!match) return null;
+            return { prefix: match[1], num: parseInt(match[2], 10) };
+        }
+
+        // Some backends' "search" action only matches on a non-empty query and simply
+        // return nothing for an empty one, rather than listing every record. To show
+        // "last 4 records" reliably regardless of that backend behavior, this looks up
+        // the most recent few Exchange and Estimate ids directly (currentExchangeId /
+        // currentEstId are always the *next* id to be assigned, so the last used ids are
+        // one less, two less, and so on) and merges whatever comes back.
+        async function fetchRecentByIdLookup(howMany) {
+            const candidates = [];
+            const ex = splitIdNumber(currentExchangeId);
+            const est = splitIdNumber(currentEstId);
+            if (ex) {
+                for (let i = 1; i <= howMany && ex.num - i >= 1; i++) candidates.push(`${ex.prefix}${ex.num - i}`);
+            }
+            if (est) {
+                for (let i = 1; i <= howMany && est.num - i >= 1; i++) candidates.push(`${est.prefix}${est.num - i}`);
+            }
+            if (candidates.length === 0) return [];
+            const results = await Promise.all(candidates.map(async (id) => {
+                try {
+                    const response = await fetch(`${scriptUrl}?action=search&query=${encodeURIComponent(id)}`);
+                    const records = await response.json();
+                    return Array.isArray(records) ? records : [];
+                } catch (err) {
+                    return [];
+                }
+            }));
+            return results.flat();
         }
 
         // Loads the most recent records and shows the last 4, newest first — used both
@@ -604,7 +655,12 @@
             try {
                 const response = await fetch(`${scriptUrl}?action=search&query=`);
                 const records = await response.json();
-                const all = Array.isArray(records) ? records : [];
+                let all = Array.isArray(records) ? records : [];
+                // Blank query came back empty — the backend likely requires a non-empty
+                // query to match anything. Fall back to looking up recent ids directly.
+                if (all.length === 0) {
+                    all = await fetchRecentByIdLookup(displayLimit);
+                }
                 searchResultsStore = sortRecordsByRecency(all);
                 displayLimit = 4;
                 renderSearchResults();
